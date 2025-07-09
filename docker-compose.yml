@@ -1,0 +1,53 @@
+services:
+  petsitting-db:
+    image: mysql:8.0
+    container_name: petsitting-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: petsitting
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./petsitting-backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - petsitting
+
+  petsitting-backend:
+    build: ./petsitting-backend
+    container_name: petsitting-backend
+    depends_on:
+      - petsitting-db
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: petsitting-db
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: petsitting
+    restart: unless-stopped
+    networks:
+      - petsitting
+
+  petsitting-frontend:
+    build: ./petsitting-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - petsitting-backend
+    networks:
+      - petsitting
+
+networks:
+  petsitting:
+
+volumes:
+  db-data:
+
+
