@@ -43,6 +43,7 @@ export default function AvailabilityCalendar() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(undefined);
+  const [editingType, setEditingType] = useState(null);
   
   // Calendar view states
   const [currentView, setCurrentView] = useState('month');
@@ -69,6 +70,28 @@ export default function AvailabilityCalendar() {
       await createType({ label, color: color || '#cccccc' });
     } catch (err) {
       console.error('Erreur lors de la création du type :', err);
+    }
+  };
+
+  const handleEditType = async (id, { label, color }) => {
+    if (!label.trim()) return;
+
+    try {
+      await updateType(id, { label, color });
+      // Recharge les types si nécessaire
+    } catch (err) {
+      console.error('Erreur lors de la modification du type :', err);
+    }
+  };
+
+  const handleDeleteType = async (id) => {
+    if (!window.confirm('Supprimer ce type ?')) return;
+
+    try {
+      await deleteType(id);
+      // Recharge les types si nécessaire
+    } catch (err) {
+      console.error('Erreur lors de la suppression du type :', err);
     }
   };
 
@@ -146,12 +169,32 @@ export default function AvailabilityCalendar() {
         ) : (
           <ul className="space-y-1 text-sm text-gray-700">
             {types?.map((type) => (
-              <li key={type.id} className="p-2 rounded flex items-center gap-2">
+              <li key={type.id} className="p-2 rounded flex items-center gap-2 justify-between bg-gray-50">
                 <span
-                  className="inline-block p-3 h-4 rounded text-white font-medium flex items-center justify-center"
+                  className="inline-block px-3 py-1 h-6 rounded font-medium flex items-center justify-center min-w-[80px] text-center"
                   style={{ backgroundColor: type.color || '#ccc'}}
                   title={`Couleur : ${type.color}`}
-                >{type.label}</span>
+                >
+                  {type.label}
+                </span>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingType(type);
+                      setTypeModalOpen(true);
+                    }}
+                    className="text-blue-600 hover:underline text-xs"
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => handleDeleteType(type.id)}
+                    className="text-red-600 hover:underline text-xs"
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -254,8 +297,20 @@ export default function AvailabilityCalendar() {
 
       <AvailabilityTypeModal
         isOpen={typeModalOpen}
-        onClose={() => setTypeModalOpen(false)}
-        onSubmit={handleCreateType}
+        onClose={() => {
+          setTypeModalOpen(false);
+          setEditingType(null);
+        }}
+        onSubmit={(data) => {
+          if (editingType) {
+            handleEditType(editingType.id, data);
+          } else {
+            handleCreateType(data);
+          }
+          setTypeModalOpen(false);
+          setEditingType(null);
+        }}
+        initialData={editingType}
       />
 
       {/* Configuration Panel */}
