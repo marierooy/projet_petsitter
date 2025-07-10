@@ -1,0 +1,13 @@
+{
+  "name": "petsitting-frontend",
+  "rsc": false,
+  "typescript": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/index.css"
+  },
+  "aliases": {
+    "components": "@/components",
+    "lib": "@/lib"
+  }
+}
