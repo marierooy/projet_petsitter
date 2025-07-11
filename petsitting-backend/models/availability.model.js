@@ -15,15 +15,21 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: false
     },
-    general_information: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
     petsitterId: {
       type: DataTypes.INTEGER,
       allowNull: true, // ou false si tu veux le rendre obligatoire, mais attention aux données existantes
       references: {
         model: 'Users',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL'
+    },
+    availabilityTypeId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // ou false si obligatoire
+      references: {
+        model: 'AvailabilityTypes',
         key: 'id'
       },
       onUpdate: 'CASCADE',

@@ -11,6 +11,7 @@ export function AvailabilityModal({
   onClose, 
   onSubmit, 
   initialData, 
+  availabilityTypes = [], // <-- ajout ici
   isEditing = false 
 }) {
   const [formData, setFormData] = useState(createFormData());
@@ -18,7 +19,11 @@ export function AvailabilityModal({
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...createFormData(),
+        ...initialData,
+        availabilityTypeId: initialData.availabilityTypeId || '' // sécurité
+      });
     } else {
       setFormData(createFormData());
     }
@@ -60,6 +65,27 @@ export function AvailabilityModal({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+          {/* Champ de sélection du type */}
+          <div className="space-y-2">
+            <Label htmlFor="availability_type_id">Type de disponibilité</Label>
+            <select
+              id="availability_type_id"
+              name="availabilityTypeId"
+              value={formData.availabilityTypeId || ''}
+              onChange={handleInputChange}
+              required
+              className="border p-2 rounded w-full"
+            >
+              <option value="">-- Choisir un type --</option>
+              {availabilityTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date début */}
           <div className="space-y-2">
             <Label htmlFor="start_date">Date de début</Label>
             <Input
@@ -73,6 +99,7 @@ export function AvailabilityModal({
             />
           </div>
           
+          {/* Date fin */}
           <div className="space-y-2">
             <Label htmlFor="end_date">Date de fin</Label>
             <Input
@@ -85,19 +112,8 @@ export function AvailabilityModal({
               className="border p-2 rounded"
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="general_information">Informations complémentaires</Label>
-            <Textarea
-              id="general_information"
-              name="general_information"
-              placeholder="Informations complémentaires"
-              value={formData.general_information}
-              onChange={handleInputChange}
-              className="border p-2 rounded min-h-[80px]"
-            />
-          </div>
-          
+
+          {/* Boutons */}
           <div className="flex justify-end gap-2 mt-6">
             <Button 
               type="button" 

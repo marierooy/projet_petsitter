@@ -28,9 +28,12 @@ export default function AvailabilityCalendar() {
   const {
     types,
     loading: typesLoading,
+    error: typesError,
     createType,
     updateType,
     deleteType,
+    fetchTypes,
+    refreshAvailabilityData,
   } = useAvailabilityTypes();
 
   // Modal states
@@ -108,7 +111,7 @@ export default function AvailabilityCalendar() {
       id: selectedEvent.id,
       start_date: format(selectedEvent.start, 'yyyy-MM-dd'),
       end_date: format(selectedEvent.end, 'yyyy-MM-dd'),
-      general_information: selectedEvent.title
+      availabilityTypeId: selectedEvent.type_id
     });
     setIsEditing(true);
     setManagementModalOpen(false);
@@ -243,9 +246,9 @@ export default function AvailabilityCalendar() {
             onNavigate={(date) => setCurrentDate(date)}
             style={{ height: 500 }}
             onSelectEvent={handleSelectEvent}
-            eventPropGetter={() => ({
+            eventPropGetter={(event) => ({
               style: {
-                backgroundColor: '#4ade80',
+                backgroundColor: event.color || '#4ade80',
                 borderRadius: '6px',
                 color: 'black',
                 border: 'none',
@@ -283,6 +286,7 @@ export default function AvailabilityCalendar() {
         onClose={handleCloseAvailabilityModal}
         onSubmit={handleAvailabilitySubmit}
         initialData={editFormData}
+        availabilityTypes={types}
         isEditing={isEditing}
       />
 

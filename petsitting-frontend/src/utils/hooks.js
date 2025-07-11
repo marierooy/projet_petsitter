@@ -27,12 +27,15 @@ export function useAvailabilities() {
       }
 
       const data = await response.json();
+      console.log(data);
       const formatted = data.map(av => ({
         id: av.id,
-        title: av.general_information || 'Disponible',
+        title: av.type?.label || 'Disponible',
+        type_id: av.type?.id,
         start: parseISO(av.start_date),
         end: parseISO(av.end_date),
         allDay: true,
+        color: av.type?.color || '#4ade80'
       }));
 
       setEvents(formatted);
@@ -455,16 +458,17 @@ export function useAvailabilityTypes() {
   const [error, setError] = useState(null);
   const getToken = () => localStorage.getItem('token');
   const token = getToken();
+  const { fetchAvailabilities } = useAvailabilities(); // Hook externe
 
   const fetchTypes = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/`, {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-        });
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
       if (!res.ok) throw new Error('Erreur lors du chargement des types');
       const data = await res.json();
       setTypes(data);
@@ -473,11 +477,16 @@ export function useAvailabilityTypes() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
+
+  const refreshAvailabilityData = useCallback(async () => {
+    await fetchTypes();
+    await fetchAvailabilities();
+  }, [fetchTypes, fetchAvailabilities]);
 
   useEffect(() => {
-    fetchTypes();
-  }, [fetchTypes]);
+    refreshAvailabilityData();
+  }, [refreshAvailabilityData]);
 
   // --- CRUD functions ---
 
@@ -487,19 +496,19 @@ export function useAvailabilityTypes() {
         const data = { label, color };
         const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/new`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error('Erreur lors de la création');
-        await fetchTypes(); // Recharge les types après ajout
+        await refreshAvailabilityData();
       } catch (err) {
         console.error(err);
       }
     },
-    [fetchTypes]
+    [refreshAvailabilityData, token]
   );
 
   const updateType = useCallback(
@@ -507,19 +516,19 @@ export function useAvailabilityTypes() {
       try {
         const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/${id}`, {
           method: 'PUT',
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ label, color }),
         });
         if (!res.ok) throw new Error('Erreur lors de la mise à jour');
-        await fetchTypes();
+        await refreshAvailabilityData();
       } catch (err) {
         console.error(err);
       }
     },
-    [fetchTypes]
+    [refreshAvailabilityData, token]
   );
 
   const deleteType = useCallback(
@@ -527,18 +536,18 @@ export function useAvailabilityTypes() {
       try {
         const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/${id}`, {
           method: 'DELETE',
-          headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
         });
         if (!res.ok) throw new Error('Erreur lors de la suppression');
-        await fetchTypes();
+        await refreshAvailabilityData();
       } catch (err) {
         console.error(err);
       }
     },
-    [fetchTypes]
+    [refreshAvailabilityData, token]
   );
 
   return {
@@ -549,5 +558,6 @@ export function useAvailabilityTypes() {
     updateType,
     deleteType,
     refetch: fetchTypes,
+    refreshAvailabilityData,
   };
 }

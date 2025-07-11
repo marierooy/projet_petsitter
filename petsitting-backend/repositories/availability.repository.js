@@ -1,9 +1,16 @@
-const { Availability } = require('../models');
+const { Availability, AvailabilityType } = require('../models');
 
 async function findAllByPetsitter(petsitterId) {
   return await Availability.findAll({
     where: { petsitterId },
-    order: [['start_date', 'ASC']]
+    order: [['start_date', 'ASC']],
+    include: [
+      {
+        model: AvailabilityType,
+        as: 'type', 
+        attributes: ['id', 'label', 'color'] 
+      }
+    ]
   });
 }
 
