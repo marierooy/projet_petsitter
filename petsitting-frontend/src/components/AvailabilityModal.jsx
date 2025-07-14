@@ -35,7 +35,16 @@ export function AvailabilityModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+  
+    const start = new Date(formData.start_date);
+    const end = new Date(formData.end_date);
+
+    if (start >= end) {
+      alert("La date de début doit être antérieure à la date de fin.");
+      return;
+    }
+
+     setIsSubmitting(true);
     
     try {
       const success = await onSubmit(formData);

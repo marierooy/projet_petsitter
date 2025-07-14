@@ -60,10 +60,17 @@ async function findOffersByUserAvailabilityAndAnimalType(petsitterId, availabili
     }
   }
 
+  const currentAvailability = await Availability.findOne({
+    where: {
+      id: availabilityId // exclut la disponibilité avec cet id
+    }
+  });
+
   // Pas d'availabilityId fourni, on cherche la dernière disponibilité
   const lastAvailability = await Availability.findOne({
     where: {
       petsitterId,
+      availabilityTypeId: currentAvailability.availabilityTypeId,
       id: {
         [Op.ne]: availabilityId // exclut la disponibilité avec cet id
       }

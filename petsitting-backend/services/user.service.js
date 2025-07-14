@@ -46,4 +46,43 @@ const login = async (email, password) => {
   return { user, token };
 };
 
-module.exports = { register, login };
+const getById = async (id) => {
+  return await userRepo.findById(id);
+};
+
+const updateById = async (id, body, file) => {
+  const sanitizeNumber = (value) => {
+    return value === '' || value === undefined || value === null ? null : Number(value);
+  };
+
+  // Nettoyage avant parseFields
+  const cleanedData = {
+    ...body,
+    number_children: sanitizeNumber(body.number_children),
+    number_rooms: sanitizeNumber(body.number_rooms),
+    habitation_size: sanitizeNumber(body.habitation_size),
+    garden_size: sanitizeNumber(body.garden_size),
+  };
+  
+  const data = {
+    ...parseFields(cleanedData),
+    photo: file ? `/uploads/${file.filename}` : undefined,
+  };
+
+  return await userRepo.updateById(id, data);
+};
+
+// Pour parser les champs JSON envoyés depuis le front
+function parseFields(body) {
+  const parsed = {};
+  for (const [key, value] of Object.entries(body)) {
+    try {
+      parsed[key] = JSON.parse(value);
+    } catch {
+      parsed[key] = value;
+    }
+  }
+  return parsed;
+}
+
+module.exports = { register, login, getById, updateById };

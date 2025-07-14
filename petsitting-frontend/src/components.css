@@ -21,3 +21,7 @@
 @component ".checkboxForm" {
   @apply ms-2 text-sm font-medium text-gray-900 dark:text-gray-300;
 }
+
+@component ".input" {
+  @apply w-full p-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300;
+}

@@ -10,6 +10,8 @@ import AuthForm from './pages/AuthForm';
 import Home from './pages/Home';
 import PrivateRoute from './routes/PrivateRoute';
 import AvailabilityCalendar from './pages/AvailabilityCalendar';
+import UserEditPage from './pages/UserEditPage';
+import BookingRequestPage from './pages/BookingRequestPage';
 
 const App = () => {
   return (
@@ -43,9 +45,40 @@ const App = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/services-animaux" element={<AnimalServicesPage />} />
-          <Route path="/occurences-services" element={<ServiceOccurencePage />} />
-          <Route path="/availabilities" element={<AvailabilityCalendar />} />
+          <Route 
+            path="/services-animaux" 
+            element={
+              <PrivateRoute>
+                <AnimalServicesPage />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/occurences-services" 
+            element={
+              <PrivateRoute>
+                <ServiceOccurencePage />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/disponibilites" 
+            element={
+                <AvailabilityCalendar />
+            } 
+          />
+          <Route 
+            path="/mes-informations" 
+            element={
+                <UserEditPage />
+            } 
+          />
+          <Route 
+            path="/chercher-petsitting" 
+            element={
+                <BookingRequestPage />
+            } 
+          />
         </Routes>
       </Router>
     </AuthProvider>

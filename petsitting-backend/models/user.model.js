@@ -24,11 +24,70 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    phone: DataTypes.STRING,
-    address: DataTypes.STRING,
-    postal_code: DataTypes.STRING,
-    city: DataTypes.STRING,
-    country: DataTypes.STRING
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    address: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    postal_code: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    country: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    presentation: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    photo: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    habitation: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    habitation_size: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    }, 
+    number_rooms: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }, 
+    garden: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },   
+    garden_size: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },  
+    terrace: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },    
+    yard: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },   
+    balcony: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },  
+    number_children: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    }, 
   }, {
     timestamps: true,
   });

@@ -10,7 +10,7 @@ export function useAvailabilities() {
   // Get token from localStorage (as in original code)
   const getToken = () => localStorage.getItem('token');
 
-  const fetchAvailabilities = async () => {
+  const fetchAvailabilities = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -27,7 +27,6 @@ export function useAvailabilities() {
       }
 
       const data = await response.json();
-      console.log(data);
       const formatted = data.map(av => ({
         id: av.id,
         title: av.type?.label || 'Disponible',
@@ -46,7 +45,7 @@ export function useAvailabilities() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); 
 
   const createAvailability = async (formData) => {
     try {
@@ -260,21 +259,21 @@ export function useSelectedOccurrences(animalTypes) {
     const initialSelected = {};
 
     animalTypes.forEach(animal => {
-      initialSelected[animal.id] = {};
+      const animalId = animal.id;
+      initialSelected[animalId] = {};
 
-      if (animal.services) {
-        animal.services.forEach(service => {
-          initialSelected[animal.id][service.id] = service.occurences ? service.occurences.map(occ => {
-            // Preserve previous checked and price if they exist
-            const prevOcc = selectedOccurrences?.[animal.id]?.[service.id]?.find(o => o.id === occ.id) || {};
-            return {
-              ...occ,
-              checked: prevOcc.checked || occ.checked,
-              price: prevOcc.price || occ.price,
-            };
-          }) : [];
-        });
-      }
+      animal.services?.forEach(service => {
+        const serviceId = service.id;
+        initialSelected[animalId][serviceId] = service.occurences?.map(occ => {
+          const occId = occ.id;
+          const prevOcc = selectedOccurrences?.[animalId]?.[serviceId]?.find(o => o.id === occId) || {};
+          return {
+            ...occ,
+            checked: prevOcc.checked || occ.checked || false,
+            price: prevOcc.price ?? occ.price ?? '',
+          };
+        }) || [];
+      });
     });
 
     setSelectedOccurrences(initialSelected);
@@ -282,41 +281,35 @@ export function useSelectedOccurrences(animalTypes) {
 
   const toggleOccurrenceChecked = (animalId, serviceId, occId) => {
     setSelectedOccurrences(prev => {
-      const animal = { ...(prev[animalId] || {}) };
-      const serviceOccurrences = [...(animal[serviceId] || [])];
+      const serviceOccurrences = prev?.[animalId]?.[serviceId] || [];
 
-      const occIndex = serviceOccurrences.findIndex(o => o.id === occId);
-      if (occIndex !== -1) {
-        serviceOccurrences[occIndex] = {
-          ...serviceOccurrences[occIndex],
-          checked: !serviceOccurrences[occIndex].checked,
-        };
-      } else {
-        // If occurrence doesn't exist yet, add it with checked = true
-        serviceOccurrences.push({ id: occId, checked: true });
-      }
+      const updatedOccurrences = serviceOccurrences.map(o =>
+        o.id === occId ? { ...o, checked: !o.checked } : o
+      );
 
       return {
         ...prev,
         [animalId]: {
-          ...animal,
-          [serviceId]: serviceOccurrences,
+          ...prev[animalId],
+          [serviceId]: updatedOccurrences,
         },
       };
     });
   };
 
-  const updateOccurrencePrice = (animalIdx, serviceIdx, occId, newPrice) => {
+  const updateOccurrencePrice = (animalId, serviceId, occId, newPrice) => {
     setSelectedOccurrences(prev => {
-      const animal = prev[animalIdx] || {};
-      const service = (animal[serviceIdx] || []).map(o =>
+      const serviceOccurrences = prev?.[animalId]?.[serviceId] || [];
+
+      const updatedOccurrences = serviceOccurrences.map(o =>
         o.id === occId ? { ...o, price: newPrice } : o
       );
+
       return {
         ...prev,
-        [animalIdx]: {
-          ...animal,
-          [serviceIdx]: service,
+        [animalId]: {
+          ...prev[animalId],
+          [serviceId]: updatedOccurrences,
         },
       };
     });
@@ -326,7 +319,7 @@ export function useSelectedOccurrences(animalTypes) {
     selectedOccurrences,
     setSelectedOccurrences,
     toggleOccurrenceChecked,
-    updateOccurrencePrice
+    updateOccurrencePrice,
   };
 }
 
@@ -334,10 +327,10 @@ export function useSelectedOccurrences(animalTypes) {
 export function useAnimalTypeOperations(animalTypes, setAnimalTypes, allAnimalTypes) {
   const [selectedServiceIndex, setSelectedServiceIndex] = useState({});
 
-  const toggleAccordion = (index) => {
+  const toggleAccordion = (animalId) => {
     setAnimalTypes(prev =>
-      prev.map((animal, i) =>
-        i === index ? { ...animal, isOpen: !animal.isOpen } : animal
+      prev.map((animal) =>
+        animal.id === animalId ? { ...animal, isOpen: !animal.isOpen } : animal
       )
     );
   };
@@ -357,16 +350,16 @@ export function useAnimalTypeOperations(animalTypes, setAnimalTypes, allAnimalTy
     ]);
   };
 
-  const removeAnimalType = (indexToRemove) => {
+  const removeAnimalType = (animalIdToRemove) => {
     setAnimalTypes(prev =>
-      prev?.filter((_, index) => index !== indexToRemove)
+      prev?.filter((animal) => animal.id !== animalIdToRemove)
     );
   };
 
-  const updateCareMode = (index, mode, value) => {
+  const updateCareMode = (animalId, mode, value) => {
     setAnimalTypes(prev =>
-      prev.map((animal, i) =>
-        i === index
+      prev.map((animal) =>
+        animal.id === animalId
           ? {
               ...animal,
               careModes: {
@@ -379,59 +372,61 @@ export function useAnimalTypeOperations(animalTypes, setAnimalTypes, allAnimalTy
     );
   };
 
-  const updateAnimalField = (index, field, value) => {
-    setAnimalTypes(prev => {
-      const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        [field]: value,
-      };
-      return updated;
-    });
+  const updateAnimalField = (animalId, field, value) => {
+    setAnimalTypes(prev =>
+      prev.map((animal) =>
+        animal.id === animalId
+          ? {
+              ...animal,
+              [field]: value,
+            }
+          : animal
+      )
+    );
   };
 
-  const handleSelectService = (animalIdx, serviceId) => {
-    setSelectedServiceIndex(prev => ({ ...prev, [animalIdx]: serviceId }));
+  const handleSelectService = (animalId, serviceId) => {
+    setSelectedServiceIndex(prev => ({ ...prev, [animalId]: serviceId }));
   };
 
-  const addSelectedService = (animalIdx) => {
-    const serviceId = parseInt(selectedServiceIndex[animalIdx], 10);
+  const addSelectedService = (animalId) => {
+    const serviceId = parseInt(selectedServiceIndex[animalId], 10);
     if (!serviceId) return;
 
     setAnimalTypes(prev => {
-      const updated = [...prev];
+      return prev.map((animal) => {
+        if (animal.id !== animalId) return animal;
 
-      const alreadyAdded = updated[animalIdx].services?.some(s => s.id === serviceId);
-      if (alreadyAdded) return prev;
+        const alreadyAdded = animal.services?.some(s => s.id === serviceId);
+        if (alreadyAdded) return animal;
 
-      const selectedService = updated[animalIdx].allServices.find(s => s.id === serviceId);
-      if (!selectedService) return prev;
+        const selectedService = animal.allServices.find(s => s.id === serviceId);
+        if (!selectedService) return animal;
 
-      updated[animalIdx] = {
-        ...updated[animalIdx],
-        services: [
-          ...(updated[animalIdx].services || []),
-          {
-            ...selectedService,
-            occurences: selectedService.occurences?.map(o => ({ ...o })) || [],
-          },
-        ],
-      };
-
-      return updated;
+        return {
+          ...animal,
+          services: [
+            ...(animal.services || []),
+            {
+              ...selectedService,
+              occurences: selectedService.occurences?.map(o => ({ ...o })) || [],
+            },
+          ],
+        };
+      });
     });
 
     // Reset the selection
-    setSelectedServiceIndex(prev => ({ ...prev, [animalIdx]: '' }));
+    setSelectedServiceIndex(prev => ({ ...prev, [animalId]: '' }));
   };
 
-  const removeService = (index, sIdx) => {
+  const removeService = (animalId, serviceIdToRemove) => {
     setAnimalTypes(prev =>
-      prev.map((animal, i) =>
-        i === index
+      prev.map((animal) =>
+        animal.id === animalId
           ? {
               ...animal,
-              services: (animal.services || [])?.filter((_, j) => j !== sIdx),
+              services: (animal.services || [])?.filter((s) => s.id !== serviceIdToRemove),
             }
           : animal
       )
@@ -458,11 +453,12 @@ export function useAvailabilityTypes() {
   const [error, setError] = useState(null);
   const getToken = () => localStorage.getItem('token');
   const token = getToken();
-  const { fetchAvailabilities } = useAvailabilities(); // Hook externe
+  const { fetchAvailabilities } = useAvailabilities();
 
   const fetchTypes = useCallback(async () => {
     setLoading(true);
     try {
+      const token = getToken();
       const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -472,23 +468,17 @@ export function useAvailabilityTypes() {
       if (!res.ok) throw new Error('Erreur lors du chargement des types');
       const data = await res.json();
       setTypes(data);
+      await fetchAvailabilities();
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  const refreshAvailabilityData = useCallback(async () => {
-    await fetchTypes();
-    await fetchAvailabilities();
-  }, [fetchTypes, fetchAvailabilities]);
+  }, [fetchAvailabilities]);
 
   useEffect(() => {
-    refreshAvailabilityData();
-  }, [refreshAvailabilityData]);
-
-  // --- CRUD functions ---
+    fetchTypes(); // Charge les types une seule fois
+  }, [fetchTypes]);
 
   const createType = useCallback(
     async ({ label, color }) => {
@@ -503,12 +493,12 @@ export function useAvailabilityTypes() {
           body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error('Erreur lors de la création');
-        await refreshAvailabilityData();
+        await fetchTypes(); // Rechargement local
       } catch (err) {
         console.error(err);
       }
     },
-    [refreshAvailabilityData, token]
+    [fetchTypes, token]
   );
 
   const updateType = useCallback(
@@ -523,12 +513,12 @@ export function useAvailabilityTypes() {
           body: JSON.stringify({ label, color }),
         });
         if (!res.ok) throw new Error('Erreur lors de la mise à jour');
-        await refreshAvailabilityData();
+        await fetchTypes(); // Rechargement local
       } catch (err) {
         console.error(err);
       }
     },
-    [refreshAvailabilityData, token]
+    [fetchTypes, token]
   );
 
   const deleteType = useCallback(
@@ -542,12 +532,12 @@ export function useAvailabilityTypes() {
           },
         });
         if (!res.ok) throw new Error('Erreur lors de la suppression');
-        await refreshAvailabilityData();
+        await fetchTypes(); // Rechargement local
       } catch (err) {
         console.error(err);
       }
     },
-    [refreshAvailabilityData, token]
+    [fetchTypes, token]
   );
 
   return {
@@ -558,6 +548,5 @@ export function useAvailabilityTypes() {
     updateType,
     deleteType,
     refetch: fetchTypes,
-    refreshAvailabilityData,
   };
 }

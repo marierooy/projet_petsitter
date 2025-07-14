@@ -50,7 +50,6 @@ async function getOffers(req, res) {
 }
 
 const deleteOffer = async (req, res) => {
-  console.log('ok');
   const { animalTypeId, availabilityId } = req.params;
   const petsitterId = req.user.id;
 

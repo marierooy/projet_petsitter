@@ -12,6 +12,9 @@ async function getAllAvailabilitiesByPetsitter(req, res) {
 
 const createAvailability = async (req, res) => {
   try {
+    if (new Date(req.body.start_date) >= new Date(req.body.end_date)) {
+      return res.status(400).json({ message: "start_date doit être antérieure à end_date" });
+    }
     const availability = await availabilityService.create(req.user.id, req.body);
     res.status(201).json(availability);
   } catch (err) {
@@ -22,6 +25,9 @@ const createAvailability = async (req, res) => {
 
 const updateAvailability = async (req, res) => {
   try {
+    if (new Date(req.body.start_date) >= new Date(req.body.end_date)) {
+      return res.status(400).json({ message: "start_date doit être antérieure à end_date" });
+    }
     const updated = await availabilityService.update(req.params.id, req.user.id, req.body);
     if (!updated) return res.status(404).json({ message: 'Disponibilité non trouvée ou accès refusé.' });
     res.json(updated);

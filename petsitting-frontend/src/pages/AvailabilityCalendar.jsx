@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
+import 'moment/locale/fr';
 import { Button } from 'components/ui/button';
 import { AvailabilityModal } from 'components/AvailabilityModal';
 import { ManagementModal } from 'components/ManagementModal';
@@ -20,6 +21,7 @@ export default function AvailabilityCalendar() {
     events,
     loading,
     error,
+    fetchAvailabilities,
     createAvailability,
     updateAvailability,
     deleteAvailability
@@ -32,8 +34,7 @@ export default function AvailabilityCalendar() {
     createType,
     updateType,
     deleteType,
-    fetchTypes,
-    refreshAvailabilityData,
+    refetch: fetchTypes,
   } = useAvailabilityTypes();
 
   // Modal states
@@ -51,6 +52,9 @@ export default function AvailabilityCalendar() {
   // Calendar view states
   const [currentView, setCurrentView] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const configPanelRef = useRef(null);
+
   // Handlers for availability modal
   const handleCreateAvailability = () => {
     setIsEditing(false);
@@ -131,6 +135,9 @@ export default function AvailabilityCalendar() {
   const handleConfigureEvent = () => {
     setManagementModalOpen(false);
     setConfigPanelVisible(true);
+    setTimeout(() => {
+      configPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   // Close handlers
@@ -175,7 +182,7 @@ export default function AvailabilityCalendar() {
               <li key={type.id} className="p-2 rounded flex items-center gap-2 justify-between bg-gray-50">
                 <span
                   className="inline-block px-3 py-1 h-6 rounded font-medium flex items-center justify-center min-w-[80px] text-center"
-                  style={{ backgroundColor: type.color || '#ccc'}}
+                  style={{ backgroundColor: type.color || '#ccc', borderRadius: '6px'}}
                   title={`Couleur : ${type.color}`}
                 >
                   {type.label}
@@ -302,10 +309,10 @@ export default function AvailabilityCalendar() {
       <AvailabilityTypeModal
         isOpen={typeModalOpen}
         onClose={() => {
-          setTypeModalOpen(false);
-          setEditingType(null);
+            setTypeModalOpen(false);
+            setEditingType(null);
         }}
-        onSubmit={(data) => {
+        onSubmit={async (data) => {
           if (editingType) {
             handleEditType(editingType.id, data);
           } else {
@@ -313,16 +320,21 @@ export default function AvailabilityCalendar() {
           }
           setTypeModalOpen(false);
           setEditingType(null);
+          setTimeout(async () => {
+            await fetchAvailabilities(); 
+          }, 100);
         }}
         initialData={editingType}
       />
 
       {/* Configuration Panel */}
-      <ConfigurationPanel
-        isVisible={configPanelVisible}
-        selectedEvent={selectedEvent}
-        onClose={handleCloseConfigPanel}
-      />
+      <div ref={configPanelRef}>
+        <ConfigurationPanel
+          isVisible={configPanelVisible}
+          selectedEvent={selectedEvent}
+          onClose={handleCloseConfigPanel}
+        />
+      </div>
 
       {/* Custom styles for calendar */}
       <style jsx>{`
