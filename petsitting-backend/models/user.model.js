@@ -102,6 +102,14 @@ module.exports = (sequelize) => {
       foreignKey: 'petsitterId',
       as: 'offers'
     });
+    User.hasMany(models.Availability, {
+      foreignKey: 'petsitterId',
+      as: 'availabilities'
+    });
+    User.hasMany(models.AvailabilityType, {
+      foreignKey: 'petsitterId',
+      as: 'availabilityTypes'
+    });
   };
   return User;
 };

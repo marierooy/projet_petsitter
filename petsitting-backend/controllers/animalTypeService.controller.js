@@ -12,10 +12,15 @@ const getServicesForAnimalType = async (req, res) => {
   }
 };
 
-const getServicesAndOccurencesForAllAnimalTypes = async (req, res) => {
+const getServicesAndOccurencesUnified = async (req, res) => {
   try {
-    const animalTypes = await animalTypeService.getServicesAndOccurencesForAllAnimalTypes();
-    res.json(animalTypes);
+    const { label } = req.query;
+
+    const result = label
+      ? await animalTypeService.getServicesAndOccurencesByLabel(label)
+      : await animalTypeService.getServicesAndOccurencesForAllAnimalTypes();
+
+    res.json(result);
   } catch (err) {
     console.error('Erreur lors de la récupération des services :', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -42,5 +47,5 @@ const updateServicesForAnimalType = async (req, res) => {
 module.exports = {
   getServicesForAnimalType,
   updateServicesForAnimalType,
-  getServicesAndOccurencesForAllAnimalTypes
+  getServicesAndOccurencesUnified
 };

@@ -4,6 +4,7 @@ const getServicesAndOccurencesForAllAnimalTypes = async () => {
   const animalTypes = await AnimalType.findAll({
     include: {
       model: Service,
+      as: 'services',
       through: { attributes: [] },
       include: {
         model: Occurence,
@@ -14,7 +15,7 @@ const getServicesAndOccurencesForAllAnimalTypes = async () => {
   });
 
   return animalTypes.map(animalType => {
-    const allServices = animalType.Services.map(service => ({
+    const allServices = animalType.services.map(service => ({
       id: service.id,
       label: service.label,
       basic_service: service.basic_service,
@@ -34,10 +35,45 @@ const getServicesAndOccurencesForAllAnimalTypes = async () => {
   });
 };
 
+const getServicesAndOccurencesByAnimalTypeLabel = async (name) => {
+  const animalType = await AnimalType.findOne({
+    where: { name },
+    include: {
+      model: Service,
+      as: 'services',
+      include: {
+        model: Occurence,
+        as: 'occurences',
+      },
+    },
+  });
+
+  if (!animalType) throw new Error('AnimalType not found');
+
+  const allServices = animalType.services.map(service => ({
+    id: service.id,
+    label: service.label,
+    basic_service: service.basic_service,
+    occurences: service.occurences.map(occ => ({
+      id: occ.id,
+      label: occ.label,
+      checked: occ.checked,
+    }))
+  }));
+
+  return {
+    id: animalType.id,
+    name: animalType.name,
+    services: allServices.filter(service => service.basic_service === true),
+    allServices: allServices
+  }; 
+};
+
 const getServicesAndOccurencesByAnimalType = async (animalTypeId) => {
   const animalType = await AnimalType.findByPk(animalTypeId, {
     include: {
       model: Service,
+      as: 'services',
       through: { attributes: [] },
       include: {
         model: Occurence,
@@ -46,7 +82,7 @@ const getServicesAndOccurencesByAnimalType = async (animalTypeId) => {
       }
     }
   });
-  return animalType?.Services || [];
+  return animalType?.services || [];
 };
 
 const getServicesByAnimalType = async (animalTypeId) => {
@@ -56,7 +92,7 @@ const getServicesByAnimalType = async (animalTypeId) => {
       through: { attributes: [] } // Ne renvoie pas la table pivot
     }
   });
-  return animalType?.Services || [];
+  return animalType?.services || [];
 };
 
 const setServicesForAnimalType = async (animalTypeId, serviceIds) => {
@@ -72,4 +108,5 @@ module.exports = {
   setServicesForAnimalType,
   getServicesAndOccurencesForAllAnimalTypes,
   getServicesAndOccurencesByAnimalType,
+  getServicesAndOccurencesByAnimalTypeLabel,
 };

@@ -1,4 +1,6 @@
-module.exports = (sequelize, DataTypes) => {
+const { DataTypes } = require('sequelize');
+
+module.exports = (sequelize) => {
   const AnimalType = sequelize.define('AnimalType', {
     id: {
       type: DataTypes.INTEGER,
@@ -19,7 +21,8 @@ module.exports = (sequelize, DataTypes) => {
     AnimalType.belongsToMany(models.Service, {
       through: 'ServiceAnimalType',
       foreignKey: 'animalTypeId',
-      otherKey: 'serviceId'
+      otherKey: 'serviceId',
+      as: 'services',
     });
     AnimalType.hasMany(models.Offer, {
       foreignKey: 'animalTypeId',

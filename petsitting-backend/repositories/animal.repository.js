@@ -1,4 +1,4 @@
-const { Animal } = require('../models');
+const { Animal, AnimalType } = require('../models');
 
 const create = async (data) => {
   return await Animal.create({
@@ -34,4 +34,16 @@ const deleteById = async (id) => {
   return await Animal.destroy({ where: { id } });
 };
 
-module.exports = { create, update, deleteById };
+const findAnimalsWithTypeByUserId = async (userId) => {
+  return await Animal.findAll({
+    where: { userId },
+    include: [
+      {
+        model: AnimalType,
+        as: 'animalType', // attention au nom du `as` utilisé dans la définition du modèle
+      }
+    ]
+  });
+};
+
+module.exports = { create, update, deleteById, findAnimalsWithTypeByUserId };

@@ -7,5 +7,6 @@ router.get('/', authMiddleware, animalController.getAnimalsByUser);
 router.post('/add', authMiddleware, animalController.createAnimal);
 router.put('/:id/edit', authMiddleware, animalController.updateAnimal);
 router.delete('/:id/delete', authMiddleware, animalController.deleteAnimal);
+router.get('/services/occurences', authMiddleware, animalController.getUserAnimalsWithServices);
 
 module.exports = router;

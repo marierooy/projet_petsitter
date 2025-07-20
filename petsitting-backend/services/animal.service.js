@@ -1,5 +1,6 @@
 const animalRepo = require('../repositories/animal.repository');
 const userRepo = require('../repositories/user.repository');
+const animalTypeServiceRepo = require('../repositories/animalTypeService.repository');
 const { AnimalType, Animal } = require('../models');
 
 const createAnimal = async (data) => {
@@ -35,4 +36,25 @@ const deleteAnimal = async (id) => {
   return deletedCount;
 };
 
-module.exports = { createAnimal, getAnimalsByUser, updateAnimal, deleteAnimal };
+
+const getAnimalsWithServicesByUserId = async (userId) => {
+  const animals = await animalRepo.findAnimalsWithTypeByUserId(userId);
+  if (!animals || animals.length === 0) return [];
+
+  const results = [];
+
+  for (const animal of animals) {
+    const allServices = await animalTypeServiceRepo.getServicesAndOccurencesByAnimalType(animal.animalType.id);
+    const basicServices = allServices.filter(service => service.basic_service === true);
+
+    const animalJson = animal.toJSON();
+    animalJson.allServices = allServices;
+    animalJson.services = basicServices;
+
+    results.push(animalJson);
+  }
+
+  return results;
+};
+
+module.exports = { createAnimal, getAnimalsByUser, updateAnimal, deleteAnimal, getAnimalsWithServicesByUserId };

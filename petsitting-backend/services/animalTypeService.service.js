@@ -8,6 +8,10 @@ const getServicesAndOccurencesForAllAnimalTypes = async () => {
   return await animalTypeServiceRepository.getServicesAndOccurencesForAllAnimalTypes();
 };
 
+const getServicesAndOccurencesByLabel = async (name) => {
+  return await animalTypeServiceRepository.getServicesAndOccurencesByAnimalTypeLabel(name);
+};
+
 const updateServices = async (animalTypeId, serviceIds) => {
   return await animalTypeServiceRepository.setServicesForAnimalType(animalTypeId, serviceIds);
 };
@@ -15,5 +19,6 @@ const updateServices = async (animalTypeId, serviceIds) => {
 module.exports = {
   getServices,
   updateServices,
-  getServicesAndOccurencesForAllAnimalTypes
+  getServicesAndOccurencesForAllAnimalTypes,
+  getServicesAndOccurencesByLabel
 };

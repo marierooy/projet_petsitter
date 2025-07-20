@@ -52,4 +52,17 @@ const deleteAnimal = async (req, res) => {
   }
 };
 
-module.exports = { createAnimal, getAnimalsByUser, updateAnimal, deleteAnimal };
+const getUserAnimalsWithServices = async (req, res) => {
+  try {
+    const userId = req.user.id; // ou `req.params.userId` si pas d'auth middleware
+
+    const animals = await animalService.getAnimalsWithServicesByUserId(userId);
+
+    res.status(200).json(animals);
+  } catch (error) {
+    console.error('Erreur dans getUserAnimalsWithServices:', error);
+    res.status(500).json({ error: error.message || 'Erreur serveur' });
+  }
+};
+
+module.exports = { createAnimal, getAnimalsByUser, updateAnimal, deleteAnimal, getUserAnimalsWithServices };
