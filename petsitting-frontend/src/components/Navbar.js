@@ -4,8 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 const Navbar = () => {
   const { user, logout } = useAuth();
 
-  console.log(user);
-
   return (
     <nav style={{ padding: '1rem', backgroundColor: '#f5f5f5' }}>
       <Link to="/" style={{ marginRight: '1rem' }}>Accueil</Link>
@@ -24,6 +22,11 @@ const Navbar = () => {
       {user?.roles?.includes('owner') || !user ? (
         <>
           <Link to="/chercher-petsitting" style={{ marginRight: '1rem' }}>Chercher un petsitting</Link>
+        </>): ''
+      }
+      {user?.roles?.includes('owner') ? (
+        <>
+          <Link to="/mes-annonces" style={{ marginRight: '1rem' }}>Mes annonces</Link>
         </>): ''
       }
       {user ? (

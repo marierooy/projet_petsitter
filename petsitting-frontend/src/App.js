@@ -12,6 +12,8 @@ import PrivateRoute from './routes/PrivateRoute';
 import AvailabilityCalendar from './pages/AvailabilityCalendar';
 import UserEditPage from './pages/UserEditPage';
 import BookingRequestPage from './pages/BookingRequestPage';
+import AdvertsPage from './pages/AdvertsPage';
+import MatchingResultsPage from './pages/MatchingResultsPage';
 
 const App = () => {
   return (
@@ -79,6 +81,13 @@ const App = () => {
                 <BookingRequestPage />
             } 
           />
+          <Route 
+            path="/mes-annonces" 
+            element={
+                <AdvertsPage />
+            } 
+          />
+          <Route path="/matching-results" element={<MatchingResultsPage />} />
         </Routes>
       </Router>
     </AuthProvider>

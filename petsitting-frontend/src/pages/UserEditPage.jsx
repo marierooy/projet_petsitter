@@ -49,25 +49,42 @@ export default function UserProfileEdit() {
     }, [setValue]);
 
     const onSubmit = (data) => {
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === 'photo' && value instanceof FileList) {
-            formData.append('photo', value[0]);
-            } else {
-            formData.append(key, JSON.stringify(value));
-            }
-        });
+    const formData = new FormData();
 
-        axios.put(`${process.env.REACT_APP_API_BASE}/api/user/me`, formData, {
-            headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data'
-            }
-        }).then(res => {
-            alert('Profil mis à jour !');
-        }).catch(err => {
-            console.error('Erreur maj profil', err);
-        });
+    // Liste des champs numériques à valider
+    const numericFields = ['habitation_size', 'number_rooms', 'number_children', 'garden_size'];
+
+    Object.entries(data).forEach(([key, value]) => {
+        if (key === 'photo' && value instanceof FileList) {
+        formData.append('photo', value[0]);
+        } else {
+        let val = value;
+
+        // Convertir en float si le champ est numérique
+        if (numericFields.includes(key)) {
+            const parsed = parseFloat(value);
+            val = isNaN(parsed) ? null : parsed;
+        }
+
+        // Sérialiser les tableaux (comme roles), sinon envoyer brut
+        if (Array.isArray(val)) {
+            formData.append(key, JSON.stringify(val));
+        } else {
+            formData.append(key, val);
+        }
+        }
+    });
+
+    axios.put(`${process.env.REACT_APP_API_BASE}/api/user/me`, formData, {
+        headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'multipart/form-data'
+        }
+    }).then(res => {
+        alert('Profil mis à jour !');
+    }).catch(err => {
+        console.error('Erreur maj profil', err);
+    });
     };
 
     if (!user) return <div className="h-screen flex items-center justify-center">Chargement...</div>;
@@ -178,7 +195,7 @@ export default function UserProfileEdit() {
                 </select>
             </div>
             <div className="grid grid-cols-3 gap-4 mt-2">
-                <input className="input" type="number" step="0.1" placeholder="Taille (m²)" {...register('habitation_size')} />
+                <input className="input" type="number" step="1" placeholder="Taille (m²)" {...register('habitation_size')} />
                 <input className="input" type="number" placeholder="Nombre de pièces" {...register('number_rooms')} />
                 <input className="input" type="number" placeholder="Nombre d'enfants" {...register('number_children')} />
             </div>
@@ -189,7 +206,7 @@ export default function UserProfileEdit() {
                 <label><input type="checkbox" {...register('yard')} /> Cour</label>
             </div>
             {hasGarden && (
-                <input className="input mt-2" type="number" step="0.1" placeholder="Taille du jardin (m²)" {...register('garden_size')} />
+                <input className="input mt-2" type="number" step="1" placeholder="Taille du jardin (m²)" {...register('garden_size')} />
             )}
             </div>
         )}
