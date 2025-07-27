@@ -1,11 +1,14 @@
 const { AnimalType, Offer } = require('../models');
 
 const findAll = async () => {
-  return await AnimalType.findAll();
+  return await AnimalType.findAll({
+    order: [['id', 'ASC']]
+  });
 };
 
 const findAnimalTypesWithOffers = async (availabilityId, petsitterId) => {
   return await AnimalType.findAll({
+    order: [['id', 'ASC']],
     include: [{
       model: Offer,
       as: 'offers',

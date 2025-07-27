@@ -110,6 +110,8 @@ module.exports = (sequelize) => {
       foreignKey: 'petsitterId',
       as: 'availabilityTypes'
     });
+    User.hasMany(models.AdvertOfferContract, { as: 'PetsitterContracts', foreignKey: 'petsitter_id' });
+    User.hasMany(models.AdvertOfferContract, { as: 'OwnerContracts', foreignKey: 'owner_id' });
   };
   return User;
 };

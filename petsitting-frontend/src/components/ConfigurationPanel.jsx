@@ -7,29 +7,65 @@ import { createAnimalType, createOfferPayload } from 'utils/types';
 import { useAnimalTypes } from 'utils/hooks';
 
 export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
-  const { animalTypes, setAnimalTypes, allAnimalTypes, saveAllOffers } = useAnimalTypes(selectedEvent?.id);
+  const { animalTypes, setAnimalTypes, selectedOccurrences, setSelectedOccurrences, allAnimalTypes, saveAllOffers } = useAnimalTypes(selectedEvent?.id);
   const [selectedAnimalId, setSelectedAnimalId] = useState('');
   const [selectedServiceIndex, setSelectedServiceIndex] = useState({});
-  const [selectedOccurrences, setSelectedOccurrences] = useState({});
+  // const [selectedOccurrences, setSelectedOccurrences] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [occurrenceVersion, setOccurrenceVersion] = useState(0);
 
-  useEffect(() => {
-    const initialSelected = {};
-    animalTypes.forEach(animal => {
-      initialSelected[animal.id] = {};
-      animal.services.forEach(service => {
-        initialSelected[animal.id][service.id] = service.occurences.map(occ => {
-          const prevOcc = selectedOccurrences?.[animal.id]?.[service.id]?.find(o => o.id === occ.id) || {};
-          return {
-            ...occ,
-            checked: prevOcc.checked || occ.checked,
-            price: prevOcc.price || occ.price,
-          };
-        });
-      });
-    });
-    setSelectedOccurrences(initialSelected);
-  }, [animalTypes]);
+  // useEffect(() => {
+  //   const initialSelected = {};
+  //   animalTypes.forEach(animal => {
+  //     initialSelected[animal.id] = {};
+  //     animal.services.forEach(service => {
+  //       initialSelected[animal.id][service.id] = service.occurences.map(occ => {
+  //         // const prevOcc = selectedOccurrences?.[animal.id]?.[service.id]?.find(o => o.id === occ.id) || {};
+  //         // return {
+  //         //   ...occ,
+  //         //   checked: prevOcc.checked || occ.checked,
+  //         //   price: prevOcc.price || occ.price,
+  //         // };
+  //         return {
+  //           ...occ,
+  //           checked: occ.checked,
+  //           price: occ.price,
+  //         };
+  //       });
+  //     });
+  //   });
+  //   setSelectedOccurrences(initialSelected);
+  //   setOccurrenceVersion(v => v + 1);
+  // }, [animalTypes]);
+
+  // const [dataHasBeenInitialized, setDataHasBeenInitialized] = useState(false);
+
+  // useEffect(() => {
+  //   console.log('useEffectAnimalTypes',animalTypes);
+  //   console.log('useEffectdataHasBeenInitialized',dataHasBeenInitialized);
+  //   if (!animalTypes || animalTypes.length === 0 || dataHasBeenInitialized) return;
+
+  //   const initialSelected = {};
+
+  //   animalTypes.forEach(animal => {
+  //     initialSelected[animal.id] = {};
+
+  //     animal.services.forEach(service => {
+  //       initialSelected[animal.id][service.id] = service.occurences.map(occ => ({
+  //         id: occ.id,
+  //         checked: occ.checked ?? false,
+  //         price: occ.price ?? 0,
+  //       }));
+  //     });
+  //   });
+
+  //   setSelectedOccurrences(initialSelected);
+  //   setDataHasBeenInitialized(true); // pour ne pas le refaire à chaque modif
+  // }, [animalTypes, dataHasBeenInitialized]);
+
+  // useEffect(() => {
+  //   setDataHasBeenInitialized(false);
+  // }, [selectedEvent?.id]);
 
   const toggleAccordion = (animalId) => {
     setAnimalTypes(prev =>
@@ -38,6 +74,78 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
       )
     );
   };
+
+  const onApplyServiceToAllAnimals = (serviceId, fromAnimalId) => {
+    const sourceAnimal = animalTypes.find((a) => a.id === fromAnimalId);
+    if (!sourceAnimal) return;
+
+    const serviceInSource = sourceAnimal.services.find((s) => s.id === serviceId);
+    if (!serviceInSource) return;
+
+    setSelectedOccurrences(prevSelectedOccurrences => {
+      const sourceOccurrences = prevSelectedOccurrences?.[fromAnimalId]?.[serviceId] || [];
+
+      const confirmApply = window.confirm(
+        `Appliquer les paramètres du service "${serviceInSource.label}" de ${sourceAnimal.name} à tous les autres animaux ?`
+      );
+      if (!confirmApply) return prevSelectedOccurrences; // on ne change rien
+
+      const newSelectedOccurrences = {};
+
+      animalTypes.forEach((animal) => {
+        const animalId = animal.id;
+        const currentAnimalOccurrences = prevSelectedOccurrences?.[animalId] || {};
+
+        let updatedOccurrences = { ...currentAnimalOccurrences }; // copie systématique
+
+        if (animalId !== fromAnimalId) {
+          const hasSameService = animal.allServices?.some((s) => s.id === serviceId);
+          if (hasSameService) {
+            updatedOccurrences[serviceId] = sourceOccurrences.map((occ) => ({
+              id: occ.id,
+              checked: occ.checked,
+              price: occ.price,
+            }));
+            const serviceToInject = animal.allServices.find(s => s.id === serviceId);
+            animal.services = [
+              ...(animal.services?.filter(s => s.id !== serviceId) || []),
+              serviceToInject,
+            ];
+          }
+        }
+        newSelectedOccurrences[animalId] = updatedOccurrences;
+      });
+      return newSelectedOccurrences;
+    });
+
+    // setOccurrenceVersion(v => v + 1);
+  };
+
+  const onApplyOfferToAllAnimals = (fromAnimalId) => {
+    const source = animalTypes.find(a => a.id === fromAnimalId);
+    if (!source) return;
+
+    const confirmCopy = window.confirm(
+      `Appliquer le mode de garde, prix des prestations et déplacements, et nombre d'animaux maximum de ${source.name} à tous les autres ?`
+    );
+    if (!confirmCopy) return;
+
+    setAnimalTypes(prev =>
+      prev.map(animal => {
+        if (animal.id === fromAnimalId) return animal; // ne modifie pas l’animal source
+
+        return {
+          ...animal,
+          careModes: source.careModes,
+          offer_price: source.offer_price,
+          travel_price: source.travel_price,
+          number_animals: source.number_animals,
+        };
+      })
+    );
+    // setOccurrenceVersion(v => v + 1);
+  };
+
 
   const handleAddAnimal = () => {
     const selectedAnimal = allAnimalTypes.find(a => a.id === parseInt(selectedAnimalId, 10));
@@ -109,6 +217,7 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
         },
       };
     });
+    // setOccurrenceVersion(v => v + 1);
   };
 
   const updateOccurrencePrice = (animalId, serviceId, occId, newPrice) => {
@@ -125,6 +234,7 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
         },
       };
     });
+    // setOccurrenceVersion(v => v + 1);
   };
 
   const handleSelectService = (animalId, serviceId) => {
@@ -216,7 +326,7 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
     <div className="mt-8 border-t pt-6 bg-white">
       <div className="max-w-4xl mx-auto">
         <h3 className="text-xl font-bold mb-6 text-gray-900">
-          Paramétrage de la disponibilité
+          Paramétrage de la disponibilité du {selectedEvent?.start?.toLocaleDateString()} au  {selectedEvent?.end?.toLocaleDateString()}
         </h3>
 
         <div className="space-y-4 mb-6">
@@ -235,6 +345,9 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
               selectedOccurrences={selectedOccurrences}
               onToggleOccurrence={(animalId, serviceId, occId) => toggleOccurrenceChecked(animalId, serviceId, occId)}
               onUpdateOccurrencePrice={(animalId, serviceId, occId, price) => updateOccurrencePrice(animalId, serviceId, occId, price)}
+              onApplyServiceToAllAnimals={(serviceId, fromAnimalId) => onApplyServiceToAllAnimals(serviceId, fromAnimalId)}
+              onApplyOfferToAllAnimals = {(fromAnimalId) => onApplyOfferToAllAnimals(fromAnimalId)}
+              version={occurrenceVersion}
             />
           ))}
         </div>

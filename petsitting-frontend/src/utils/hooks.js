@@ -142,6 +142,8 @@ export function useAnimalTypes(availabilityId) {
   const [allAnimalTypes, setAllAnimalTypes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedOccurrences, setSelectedOccurrences] = useState({});
+  console.log('hookanimalTypes', animalTypes)
 
   const getToken = () => localStorage.getItem('token');
 
@@ -168,6 +170,34 @@ export function useAnimalTypes(availabilityId) {
 
       const data = await response.json();
       setAnimalTypes(data);
+
+      const initialSelected = {};
+
+      data.forEach(animal => {
+        const animalId = animal.id;
+        initialSelected[animalId] = {};
+
+        animal.services?.forEach(service => {
+          const serviceId = service.id;
+          initialSelected[animalId][serviceId] = service.occurences?.map(occ => {
+            // const occId = occ.id;
+            // const prevOcc = selectedOccurrences?.[animalId]?.[serviceId]?.find(o => o.id === occId) || {};
+
+            // return {
+            //   ...occ,
+            //   checked: prevOcc.checked || occ.checked || false,
+            //   price: prevOcc.price ?? occ.price ?? '',
+            // };
+            return {
+              ...occ,
+              checked: occ.checked || false,
+              price: occ.price ?? '',
+            };
+          }) || [];
+        });
+      });
+
+      setSelectedOccurrences(initialSelected);
     } catch (err) {
       console.error('Error fetching animal types:', err);
       setError(err.message);
@@ -242,6 +272,8 @@ export function useAnimalTypes(availabilityId) {
   return {
     animalTypes,
     setAnimalTypes,
+    selectedOccurrences,
+    setSelectedOccurrences,
     allAnimalTypes,
     isLoading,
     error,
@@ -265,12 +297,18 @@ export function useSelectedOccurrences(animalTypes) {
       animal.services?.forEach(service => {
         const serviceId = service.id;
         initialSelected[animalId][serviceId] = service.occurences?.map(occ => {
-          const occId = occ.id;
-          const prevOcc = selectedOccurrences?.[animalId]?.[serviceId]?.find(o => o.id === occId) || {};
+          // const occId = occ.id;
+          // const prevOcc = selectedOccurrences?.[animalId]?.[serviceId]?.find(o => o.id === occId) || {};
+
+          // return {
+          //   ...occ,
+          //   checked: prevOcc.checked || occ.checked || false,
+          //   price: prevOcc.price ?? occ.price ?? '',
+          // };
           return {
             ...occ,
-            checked: prevOcc.checked || occ.checked || false,
-            price: prevOcc.price ?? occ.price ?? '',
+            checked: occ.checked || false,
+            price: occ.price ?? '',
           };
         }) || [];
       });

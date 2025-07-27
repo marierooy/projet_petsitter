@@ -2,6 +2,7 @@ const { AnimalType, Service, Occurence } = require('../models');
 
 const getServicesAndOccurencesForAllAnimalTypes = async () => {
   const animalTypes = await AnimalType.findAll({
+    order: [['id', 'ASC']],
     include: {
       model: Service,
       as: 'services',
@@ -82,7 +83,12 @@ const getServicesAndOccurencesByAnimalType = async (animalTypeId) => {
       }
     }
   });
-  return animalType?.services || [];
+  return {
+      id: animalType.id,
+      name: animalType.name,
+      services: animalType?.services.filter(service => service.basic_service === true),
+      allServices: animalType?.services
+    };
 };
 
 const getServicesByAnimalType = async (animalTypeId) => {

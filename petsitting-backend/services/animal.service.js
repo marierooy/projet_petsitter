@@ -44,12 +44,11 @@ const getAnimalsWithServicesByUserId = async (userId) => {
   const results = [];
 
   for (const animal of animals) {
-    const allServices = await animalTypeServiceRepo.getServicesAndOccurencesByAnimalType(animal.animalType.id);
-    const basicServices = allServices.filter(service => service.basic_service === true);
+    const { allServices, services } = await animalTypeServiceRepo.getServicesAndOccurencesByAnimalType(animal.animalType.id);
 
     const animalJson = animal.toJSON();
     animalJson.allServices = allServices;
-    animalJson.services = basicServices;
+    animalJson.services = services;
 
     results.push(animalJson);
   }

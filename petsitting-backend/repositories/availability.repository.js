@@ -1,4 +1,7 @@
 const { Availability, AvailabilityType } = require('../models');
+const offerRepository = require('../repositories/offer.repository');
+const animalTypeRepository = require('../repositories/animalType.repository');
+const offerService = require('../services/offer.service');
 
 async function findAllByPetsitter(petsitterId) {
   return await Availability.findAll({
@@ -14,8 +17,24 @@ async function findAllByPetsitter(petsitterId) {
   });
 }
 
-const createAvailability = async (data) => {
-  return await Availability.create(data);
+const createAvailability = async (petsitterId, data) => {
+  const availability = await Availability.create({...data, petsitterId});
+  const animalTypes = await animalTypeRepository.findAll();
+  const animalTypeResults = await Promise.all(
+    animalTypes.map(async (animalType) => {
+      const createdOffer = await offerRepository.findOffersByUserAvailabilityAndAnimalType(
+        petsitterId,
+        availability.id,
+        animalType.id
+      );
+      if (createdOffer.dataValues) {
+        createdOffer.dataValues.availabilityId = availability.id;
+      } else {
+        createdOffer.availabilityId = availability.id;
+      }
+      await offerService.updateOffer(animalType.id, petsitterId, createdOffer);
+    }))
+  return availability;
 };
 
 const updateAvailability = async (id, data) => {

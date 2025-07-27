@@ -33,6 +33,7 @@ module.exports = (sequelize) => {
         onDelete: 'CASCADE',   // ⬅️ supprime automatiquement les occurrences liées
         hooks: true
     });
+    Advert.hasMany(models.AdvertOfferContract, { foreignKey: 'advert_id' });
   };
 
   return Advert;

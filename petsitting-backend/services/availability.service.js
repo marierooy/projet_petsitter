@@ -5,7 +5,7 @@ async function getAllAvailabilitiesByPetsitter(petsitterId) {
 }
 
 const create = async (userId, data) => {
-  return await availabilityRepo.createAvailability({ ...data, petsitterId: userId });
+  return await availabilityRepo.createAvailability(userId, data);
 };
 
 const update = async (id, userId, data) => {

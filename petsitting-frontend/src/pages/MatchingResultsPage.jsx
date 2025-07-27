@@ -10,51 +10,88 @@ export default function MatchingResultsPage() {
   const [petsitters, setPetsitters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  if (!requestData || requestData.length === 0) return;
+  useEffect(() => {
+    if (!requestData || requestData.length === 0) return;
 
-  const fetchCommonPetsitters = async () => {
-    try {
-      let commonPetsitters = [];
+    const fetchCommonPetsitters = async () => {
+      try {
+        let commonPetsitters = [];
 
-      if (!Array.isArray(requestData)) {
-        // Cas 1 seul animal
-        const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, requestData);
-        commonPetsitters = response.data;
-      } else {
-        // Cas plusieurs animaux : on fait une requête par animal
-        const results = await Promise.all(
-          requestData.map((data) => axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, data))
-        );
+        if (!Array.isArray(requestData)) {
+          const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, requestData);
+          commonPetsitters = response.data.map(p => ({
+            ...p,
+            syntheticOffers: {
+              [requestData.animalId]: p.syntheticOffer, // ou autre clé selon ton backend
+            },
+          }));
+        } else {
+          const results = await Promise.all(
+            requestData.map((data) => axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, data))
+          );
 
-        // On extrait uniquement les IDs de petsitter pour chaque liste
-        const listOfIdSets = results.map((res) =>
-          new Set(res.data.map((p) => p.id))
-        );
+          const listOfIdSets = results.map((res) =>
+            new Set(res.data.map((p) => p.id))
+          );
 
-        // Intersection : garder seulement les IDs présents dans tous les ensembles
-        const commonIds = [...listOfIdSets[0]].filter((id) =>
-          listOfIdSets.every((idSet) => idSet.has(id))
-        );
+          const commonIds = [...listOfIdSets[0]].filter((id) =>
+            listOfIdSets.every((idSet) => idSet.has(id))
+          );
 
-        // Reconstituer les objets petsitters communs à partir du premier résultat
-        const allPetsitters = results.flatMap((res) => res.data);
-        const seen = new Set();
-        commonPetsitters = allPetsitters.filter(
-          (p) => commonIds.includes(p.id) && !seen.has(p.id) && seen.add(p.id)
-        );
+          const petsitterMap = {};
+
+          results.forEach((res, index) => {
+            const animalId = requestData[index].animalId; // ou autre identifiant
+            res.data.forEach((p) => {
+              if (!commonIds.includes(p.id)) return;
+
+              if (!petsitterMap[p.id]) {
+                petsitterMap[p.id] = { ...p, syntheticOffers: {} };
+              }
+
+              petsitterMap[p.id].syntheticOffers[animalId] = p.syntheticOffer; // ⚠️ dépend du backend
+            });
+          });
+
+          commonPetsitters = Object.values(petsitterMap);
+        }
+
+        setPetsitters(commonPetsitters);
+      } catch (error) {
+        console.error('Erreur lors du chargement des petsitters :', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setPetsitters(commonPetsitters);
+    fetchCommonPetsitters();
+  }, [requestData]);
+
+  const handleSelectPetsitter = async (petsitter) => {
+    try {
+
+      // ✅ Enregistrement des syntheticOffers liés à ce contract
+      const syntheticOffersArray = Object.values(petsitter.syntheticOffers); // { animalId: syntheticOffer }
+
+      await axios.post(`${process.env.REACT_APP_API_BASE}/api/synthetic-offers`, {
+        syntheticOffers: syntheticOffersArray,
+      });
+
+      const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/contracts`, {
+        petsitter_id: petsitter.id,
+        owner_id: connectedUser.id, // Utilise ton contexte auth ici
+        total_price: petsitter.totalPrice,
+        estimate: false,
+      });
+
+      const contract = response.data;
+
+      navigate('/contracts/' + contract.id);
     } catch (error) {
-      console.error('Erreur lors du chargement des petsitters :', error);
-    } finally {
-      setLoading(false);
+      console.error("Erreur lors de la création du contrat ou des offres :", error);
+      alert("Une erreur est survenue.");
     }
   };
-
-  fetchCommonPetsitters();
-}, [requestData]);
 
   if (!requestData) {
     return (
@@ -90,13 +127,19 @@ useEffect(() => {
                 <p className="text-sm text-gray-600">{petsitter.totalPrice} €</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">{petsitter.distanceInKm}</p>
+                <p className="text-sm text-gray-600">{petsitter.distanceInKm} km</p>
               </div>
               <button
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 onClick={() => navigate('/contact', { state: { petsitter } })}
               >
                 Voir le profil
+              </button>
+              <button
+                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                onClick={() => handleSelectPetsitter(petsitter)}
+              >
+                Choisir ce petsitter
               </button>
             </li>
           ))}

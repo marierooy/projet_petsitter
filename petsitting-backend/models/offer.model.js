@@ -9,15 +9,12 @@ module.exports = (sequelize) => {
     },
     number_animals: {
       type: DataTypes.INTEGER,
-      allowNull: false,
     },
     offer_price: {
       type: DataTypes.FLOAT,
-      allowNull: false,
     },
     travel_price: {
       type: DataTypes.FLOAT,
-      allowNull: false,
     }
   });
 
@@ -58,6 +55,7 @@ module.exports = (sequelize) => {
       },
       as: 'availability'
     });
+    Offer.hasMany(models.AdvertOfferContract, { foreignKey: 'offer_id' });
   };
 
   return Offer;

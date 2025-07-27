@@ -5,13 +5,20 @@ const animalTypeServiceRepository = require('../repositories/animalTypeService.r
 
 const updateOffer = async (animalId, petsitterId, data) => {
   const {
-    number_animals,
-    offer_price,
-    travel_price,
+    number_animals = 0,
+    offer_price = 0,
+    travel_price = 0,
     availabilityId,
     careModes = {},
-    services = []
-  } = data;
+    services = [],
+    offerServiceOccurences = [],
+  } = data?.dataValues ?? data;
+
+  // console.log( 'data', data)
+  // console.log( 'param', animalId,  number_animals,
+  //   offer_price,
+  //   travel_price,
+  //   availabilityId, careModes, services)
 
   // 1. Trouver ou créer l'offre
   let offer = await offerRepository.findByAnimalPetsitterAndAvailability(animalId, petsitterId, availabilityId);
@@ -29,10 +36,14 @@ const updateOffer = async (animalId, petsitterId, data) => {
     await offer.update({ number_animals, offer_price, travel_price });
   }
 
-  // 2. Mettre à jour les modes de garde
-  const modeLabels = Object.entries(careModes)
-    .filter(([, enabled]) => enabled)
-    .map(([label]) => label);
+  let modeLabels = [];
+  if (data.dataValues) {
+    modeLabels = careModes.map(mode => mode.dataValues.label);
+  } else {
+    modeLabels = Object.entries(careModes)
+      .filter(([, enabled]) => enabled)
+      .map(([label]) => label);
+  }
 
   const modes = await CareMode.findAll({
     where: {
@@ -43,7 +54,11 @@ const updateOffer = async (animalId, petsitterId, data) => {
   await offer.setCareModes(modes); // Remplace les anciens
 
   // 3. Mettre à jour les services et occurrences
-  await offerRepository.updateOfferServicesAndOccurrences(offer.id, services);
+  if(!services || services.length === 0) {
+    await offerRepository.updateRawOfferServicesAndOccurrences(offer.id, offerServiceOccurences);
+  } else {
+    await offerRepository.updateOfferServicesAndOccurrences(offer.id, services);
+  }
 };
 
 async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
@@ -66,7 +81,7 @@ async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
 
       const animalTypeServices = await animalTypeServiceRepository.getServicesAndOccurencesByAnimalType(animalType.id)
 
-      const allServices = animalTypeServices.map(service => ({
+      const allServices = animalTypeServices.allServices.map(service => ({
         id: service.id,
         label: service.label,
         basic_service: service.basic_service,
@@ -135,9 +150,50 @@ async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
       };
     })
   );
-
   return animalTypeResults;
 }
+
+const saveSyntheticOffers = async (syntheticOffers) => {
+  const createdOffers = [];
+
+  for (const synthetic of syntheticOffers) {
+    const {
+      animalTypeId,
+      availability,
+      careModes,
+      offer_price,
+      travel_price,
+      number_animals,
+      offerServiceOccurences,
+    } = synthetic;
+
+    // 1. Create availability
+    const createdAvailability = await syntheticOfferRepository.createAvailability(availability);
+
+    // 2. Create offer
+    const createdOffer = await syntheticOfferRepository.createOffer({
+      animalTypeId,
+      offer_price,
+      travel_price,
+      contractId,
+    });
+
+    // 3. Link availability and offer
+    await syntheticOfferRepository.linkAvailabilityToOffer(createdAvailability.id, createdOffer.id);
+
+    // 4. Link care mode
+    await syntheticOfferRepository.addCareModeToOffer(careModeId, createdOffer.id);
+
+    // 5. Link each service/occurrence
+    for (const { serviceId, occurrenceId, price } of services) {
+      await syntheticOfferRepository.addServiceOccurenceToOffer(serviceId, occurrenceId, price, createdOffer.id);
+    }
+
+    createdOffers.push(createdOffer);
+  }
+
+  return createdOffers;
+};
 
 
 const deleteOffer = async (animalTypeId, petsitterId, availabilityId) => {

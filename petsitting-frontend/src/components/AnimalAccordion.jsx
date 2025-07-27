@@ -14,6 +14,11 @@ export function AnimalAccordion({
   const selectedServiceIds = Object.keys(selectedServiceIndex || {}).map(Number);
   const availableServices = allServices.filter(s => !selectedServiceIds.includes(s.id));
 
+  const availableServicesOptions = availableServices.map(service => ({
+    value: service.id.toString(),
+    label: service.label,
+  }));
+
   const [serviceToAdd, setServiceToAdd] = useState('');
 
   return (
@@ -63,7 +68,7 @@ export function AnimalAccordion({
 
       {availableServices.length > 0 && (
         <div className="flex space-x-2 items-center">
-          <Select value={serviceToAdd} onChange={setServiceToAdd} className="flex-[2]">
+          <Select value={serviceToAdd} onChange={setServiceToAdd} options={availableServicesOptions} className="flex-[2]">
             <SelectTrigger />
             <SelectContent>
               {availableServices.map(service => (

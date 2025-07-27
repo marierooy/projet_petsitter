@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
 import { Label } from 'components/ui/label';
@@ -23,8 +23,18 @@ export function AnimalTypeAccordion({
   selectedServiceIndex,
   selectedOccurrences = {},
   onToggleOccurrence,
-  onUpdateOccurrencePrice
+  onUpdateOccurrencePrice,
+  onApplyServiceToAllAnimals,
+  onApplyOfferToAllAnimals,
+  version
 }) {
+
+  // const [localOccurrences, setLocalOccurrences] = useState(selectedOccurrences);
+
+  // useEffect(() => {
+  //   setselectedOccurrences(selectedOccurrences);
+  // }, [version]);
+
   const id = animal.id;
 
   const availableServices =
@@ -36,6 +46,7 @@ export function AnimalTypeAccordion({
     value: service.id.toString(),
     label: service.label,
   }));
+
   return (
     <div className="border rounded-lg mb-4 overflow-visible">
       {/* Accordion Header */}
@@ -72,6 +83,14 @@ export function AnimalTypeAccordion({
       {/* Accordion Content */}
       {animal.isOpen && (
         <div className="p-4 bg-white border-t">
+          <div className="flex justify-center my-2">
+            <button
+              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              onClick={() => onApplyOfferToAllAnimals(animal.id)}
+            >
+              Appliquer cette config à tous les animaux
+            </button>
+          </div>
           {/* Care Modes */}
           <div className="space-y-3 mb-4">
             {['home', 'sitter'].map((mode) => (
@@ -145,14 +164,25 @@ export function AnimalTypeAccordion({
               <div key={service.id} className="p-3 bg-gray-50 rounded-lg mb-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium text-gray-900">{service.label}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemoveService(id, service.id)}
-                    className="appearance-none bg-transparent border-none p-0 m-0 text-red-500 hover:bg-transparent hover:text-red-500 focus:outline-none focus:ring-0 active:bg-transparent"
-                  >
-                    ❌
-                  </Button>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700 p-0 m-0"
+                      onClick={() => onApplyServiceToAllAnimals(service.id, id)}
+                      title="Appliquer à tous les animaux"
+                    >
+                      Appliquer à tous les animaux
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemoveService(id, service.id)}
+                      className="appearance-none bg-transparent border-none p-0 m-0 text-red-500 hover:bg-transparent hover:text-red-500 focus:outline-none focus:ring-0 active:bg-transparent"
+                    >
+                      ❌
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="ml-2">
