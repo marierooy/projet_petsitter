@@ -41,15 +41,18 @@ export default function MatchingResultsPage() {
           const petsitterMap = {};
 
           results.forEach((res, index) => {
-            const animalId = requestData[index].animalId; // ou autre identifiant
+            const animalId = requestData[index].animalId;
             res.data.forEach((p) => {
               if (!commonIds.includes(p.id)) return;
 
               if (!petsitterMap[p.id]) {
-                petsitterMap[p.id] = { ...p, syntheticOffers: {} };
+                petsitterMap[p.id] = { ...p, syntheticOffers: [] };
               }
 
-              petsitterMap[p.id].syntheticOffers[animalId] = p.syntheticOffer; // ⚠️ dépend du backend
+              petsitterMap[p.id].syntheticOffers.push({
+                animalId,
+                syntheticOffer: p.syntheticOffer,
+              });
             });
           });
 
@@ -69,24 +72,26 @@ export default function MatchingResultsPage() {
 
   const handleSelectPetsitter = async (petsitter) => {
     try {
-
+      const token = localStorage.getItem('token');
       // ✅ Enregistrement des syntheticOffers liés à ce contract
-      const syntheticOffersArray = Object.values(petsitter.syntheticOffers); // { animalId: syntheticOffer }
+      const syntheticOffers = Object.values(petsitter.syntheticOffers); // { animalId: syntheticOffer }
 
-      await axios.post(`${process.env.REACT_APP_API_BASE}/api/synthetic-offers`, {
-        syntheticOffers: syntheticOffersArray,
+      console.log(petsitter.syntheticOffers)
+
+      await axios.post(`${process.env.REACT_APP_API_BASE}/api/offer/synthetic`, syntheticOffers, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/contracts`, {
-        petsitter_id: petsitter.id,
-        owner_id: connectedUser.id, // Utilise ton contexte auth ici
-        total_price: petsitter.totalPrice,
-        estimate: false,
-      });
+      // const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/contracts`, {
+      //   petsitter_id: petsitter.id,
+      //   owner_id: connectedUser.id, // Utilise ton contexte auth ici
+      //   total_price: petsitter.totalPrice,
+      //   estimate: false,
+      // });
 
-      const contract = response.data;
+      // const contract = response.data;
 
-      navigate('/contracts/' + contract.id);
+      // navigate('/contracts/' + contract.id);
     } catch (error) {
       console.error("Erreur lors de la création du contrat ou des offres :", error);
       alert("Une erreur est survenue.");

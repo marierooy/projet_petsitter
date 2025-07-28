@@ -65,9 +65,28 @@ const deleteOffer = async (req, res) => {
   }
 };
 
+const saveSyntheticOffers = async (req, res) => {
+  const petsitterId = req.user.id;
+  const { syntheticOffers } = req.body;
+
+  try {
+    if (!Array.isArray(syntheticOffers)) {
+      return res.status(400).json({ error: 'syntheticOffers (array) requis.' });
+    }
+
+    const result = await offerService.saveSyntheticOffers(syntheticOffers, petsitterId);
+
+    res.status(201).json(result);
+  } catch (err) {
+    console.error('Erreur lors de la sauvegarde des syntheticOffers :', err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
 module.exports = { 
   updateOfferByAnimalId, 
   updateMultipleOffers,
   getOffers,
   deleteOffer,
+  saveSyntheticOffers
 }

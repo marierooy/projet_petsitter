@@ -87,10 +87,9 @@ const rebuildSyntheticOffer = async (
     number_animals: Math.min(...usedOffers.map(o => o.number_animals || 1)),
     careModes: careModesObject,
     offerServiceOccurences: serviceOccurences,
-    availability: {
+    availabilityData: {
       start_date: safeParseDate(startDate),
       end_date: safeParseDate(endDate),
-      type: 'petsitting'
     }
   };
 };
@@ -304,15 +303,17 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
         return servicesOk && careModeOk && animalCountOk;
       })).filter(Boolean);
 
-      const syntheticOffer = rebuildSyntheticOffer(usedOffers, startDate, endDate, animal.animalTypeId, totalOfferPrice, totalTravelPrice, servicesWithTotalPrice, [careModeId]);
+      const syntheticOffer = await rebuildSyntheticOffer(usedOffers, startDate, endDate, animal.animalTypeId, totalOfferPrice, totalTravelPrice, servicesWithTotalPrice, [careModeId]);
 
+      console.log('syntheticOffer', syntheticOffer)
+      
       const distanceInfo = await getBirdDistance(ownerAddress, formatAddress(user));
 
       results.push({
         ...user.toJSON(),
         totalPrice: Math.round(totalPrice * 100) / 100,
         distanceInKm: Math.round(distanceInfo.distanceInKm * 10) / 10,
-        syntheticOffer
+        syntheticOffer: syntheticOffer,
       });
     }
   }

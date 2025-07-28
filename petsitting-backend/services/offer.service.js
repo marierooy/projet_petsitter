@@ -1,4 +1,4 @@
-const { CareMode, OfferServiceOccurence } = require('../models');
+const { CareMode, OfferServiceOccurence, AvailabilityType } = require('../models');
 const offerRepository = require('../repositories/offer.repository');
 const animalTypeRepository = require('../repositories/animalType.repository');
 const animalTypeServiceRepository = require('../repositories/animalTypeService.repository');
@@ -153,13 +153,13 @@ async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
   return animalTypeResults;
 }
 
-const saveSyntheticOffers = async (syntheticOffers) => {
+const saveSyntheticOffers = async (syntheticOffers, petsitterId) => {
   const createdOffers = [];
 
   for (const synthetic of syntheticOffers) {
     const {
       animalTypeId,
-      availability,
+      availabilityData,
       careModes,
       offer_price,
       travel_price,
@@ -167,27 +167,40 @@ const saveSyntheticOffers = async (syntheticOffers) => {
       offerServiceOccurences,
     } = synthetic;
 
-    // 1. Create availability
-    const createdAvailability = await syntheticOfferRepository.createAvailability(availability);
-
-    // 2. Create offer
-    const createdOffer = await syntheticOfferRepository.createOffer({
-      animalTypeId,
-      offer_price,
-      travel_price,
-      contractId,
+    // 1. Create availability type
+    const [availabilityType, created] = await models.AvailabilityType.findOrCreate({
+        where: {
+          label: 'Petsitting',
+          petsitterId
+        },
+        defaults: {
+          label: 'Petsitting',
+          color: 'red',
+          petsitterId
+        }
     });
 
-    // 3. Link availability and offer
-    await syntheticOfferRepository.linkAvailabilityToOffer(createdAvailability.id, createdOffer.id);
+    const { start_date, end_date } = availabilityData;
 
-    // 4. Link care mode
-    await syntheticOfferRepository.addCareModeToOffer(careModeId, createdOffer.id);
+    // 2. Create availability type
 
-    // 5. Link each service/occurrence
-    for (const { serviceId, occurrenceId, price } of services) {
-      await syntheticOfferRepository.addServiceOccurenceToOffer(serviceId, occurrenceId, price, createdOffer.id);
+    const availability = await models.Availability.create({
+      start_date,
+      end_date,
+      petsitterId,
+      availabilityTypeId: availabilityType.id
+    });
+
+    // 3. Create offer
+    const data = { 
+      offer_price,
+      travel_price,
+      number_animals,
+      availabilityId: availability.id,
+      careModes,
+      offerServiceOccurences
     }
+    const createdOffer = await updateOffer(animalTypeId, petsitterId, data);
 
     createdOffers.push(createdOffer);
   }
@@ -213,5 +226,6 @@ const deleteOffer = async (animalTypeId, petsitterId, availabilityId) => {
 module.exports = {
   updateOffer, 
   getOffersByUserAndAvailability,
+  saveSyntheticOffers,
   deleteOffer
 };

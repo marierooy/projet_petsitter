@@ -6,5 +6,6 @@ const { authMiddleware } = require('../middlewares/auth.middleware');
 // PUT /api/offer/:animalId
 // router.put('/:animalTypeId', authMiddleware, offerController.updateOfferByAnimalId);
 router.put('/bulk', authMiddleware, offerController.updateMultipleOffers);
+router.post('/synthetic', authMiddleware, offerController.saveSyntheticOffers);
 
 module.exports = router;

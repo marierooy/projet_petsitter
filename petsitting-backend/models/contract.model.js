@@ -22,11 +22,11 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
   }, {
-    tableName: 'contracts',
+    tableName: 'Contracts',
     timestamps: true, // createdAt / updatedAt
   });
 
-  Contract.associate = models => {
+  Contract.associate = (models) => {
     Contract.hasOne(models.AdvertOfferContract, { foreignKey: 'contract_id' });
   };
 
