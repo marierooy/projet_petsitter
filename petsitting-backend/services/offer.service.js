@@ -1,4 +1,4 @@
-const { CareMode, OfferServiceOccurence, AvailabilityType } = require('../models');
+const { CareMode, OfferServiceOccurence, AvailabilityType, Availability } = require('../models');
 const offerRepository = require('../repositories/offer.repository');
 const animalTypeRepository = require('../repositories/animalType.repository');
 const animalTypeServiceRepository = require('../repositories/animalTypeService.repository');
@@ -59,6 +59,8 @@ const updateOffer = async (animalId, petsitterId, data) => {
   } else {
     await offerRepository.updateOfferServicesAndOccurrences(offer.id, services);
   }
+
+  return offer
 };
 
 async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
@@ -158,6 +160,11 @@ const saveSyntheticOffers = async (syntheticOffers, petsitterId) => {
 
   for (const synthetic of syntheticOffers) {
     const {
+      animalId,
+      syntheticOffer
+    } = synthetic;
+
+    const {
       animalTypeId,
       availabilityData,
       careModes,
@@ -165,10 +172,10 @@ const saveSyntheticOffers = async (syntheticOffers, petsitterId) => {
       travel_price,
       number_animals,
       offerServiceOccurences,
-    } = synthetic;
+    } = syntheticOffer;
 
     // 1. Create availability type
-    const [availabilityType, created] = await models.AvailabilityType.findOrCreate({
+    const [availabilityType, created] = await AvailabilityType.findOrCreate({
         where: {
           label: 'Petsitting',
           petsitterId
@@ -184,11 +191,13 @@ const saveSyntheticOffers = async (syntheticOffers, petsitterId) => {
 
     // 2. Create availability type
 
-    const availability = await models.Availability.create({
+    const [availability, createdAv] = await Availability.findOrCreate({
+      where: {
       start_date,
       end_date,
       petsitterId,
       availabilityTypeId: availabilityType.id
+      }
     });
 
     // 3. Create offer
@@ -202,7 +211,7 @@ const saveSyntheticOffers = async (syntheticOffers, petsitterId) => {
     }
     const createdOffer = await updateOffer(animalTypeId, petsitterId, data);
 
-    createdOffers.push(createdOffer);
+    createdOffers.push({...createdOffer.dataValues, animalId});
   }
 
   return createdOffers;

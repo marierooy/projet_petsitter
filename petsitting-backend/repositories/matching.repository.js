@@ -223,7 +223,6 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
         isAfter(safeParseDate(groupStart), safeParseDate(startDate)) ||
         isBefore(safeParseDate(groupEnd), safeParseDate(endDate))
       ) {
-        console.log('continue')
         continue;
       }
 
@@ -304,8 +303,6 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
       })).filter(Boolean);
 
       const syntheticOffer = await rebuildSyntheticOffer(usedOffers, startDate, endDate, animal.animalTypeId, totalOfferPrice, totalTravelPrice, servicesWithTotalPrice, [careModeId]);
-
-      console.log('syntheticOffer', syntheticOffer)
       
       const distanceInfo = await getBirdDistance(ownerAddress, formatAddress(user));
 

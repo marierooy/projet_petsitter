@@ -67,7 +67,7 @@ const deleteOffer = async (req, res) => {
 
 const saveSyntheticOffers = async (req, res) => {
   const petsitterId = req.user.id;
-  const { syntheticOffers } = req.body;
+  const syntheticOffers = req.body;
 
   try {
     if (!Array.isArray(syntheticOffers)) {

@@ -18,6 +18,7 @@ const userRoutes = require('./routes/user.routes');
 const careModeRoutes = require('./routes/careMode.routes');
 const advertRoutes = require('./routes/advert.routes');
 const matchingRoutes = require('./routes/matching.routes');
+const contractRoutes = require('./routes/contract.routes');
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
@@ -32,6 +33,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/care-mode', careModeRoutes);
 app.use('/api/advert', advertRoutes);
 app.use('/api/matching', matchingRoutes);
+app.use('/api/contract', contractRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

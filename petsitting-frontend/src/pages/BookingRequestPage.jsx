@@ -174,13 +174,18 @@ export default function BookingRequestPage() {
         };
       }).filter(Boolean); // Supprimer les null si animal non trouvé
 
-      for (const advert of advertsPayload) {
-        await axios.post(`${process.env.REACT_APP_API_BASE}/api/advert`, advert, {
+      for (let i = 0; i < advertsPayload.length; i++) {
+        const advert = advertsPayload[i];
+        const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/advert`, advert, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
         });
+
+        const createdAdvert = response.data; // on suppose que l'API renvoie l'objet advert avec son id
+        // Ajoute l'id dans l'objet original pour pouvoir l'utiliser ensuite
+        advertsPayload[i].advertId = createdAdvert.id;
       }
 
       alert('Demandes envoyées !');

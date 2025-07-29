@@ -46,16 +46,29 @@ export default function MatchingResultsPage() {
               if (!commonIds.includes(p.id)) return;
 
               if (!petsitterMap[p.id]) {
-                petsitterMap[p.id] = { ...p, syntheticOffers: [] };
+                petsitterMap[p.id] = {
+                  ...p,
+                  syntheticOffers: [],
+                  total_price: 0,
+                };
               }
 
               petsitterMap[p.id].syntheticOffers.push({
                 animalId,
                 syntheticOffer: p.syntheticOffer,
               });
+
+              // Ajoute totalPrice de la réponse à total_price global
+              if (typeof p.totalPrice === 'number') {
+                petsitterMap[p.id].total_price += p.totalPrice;
+              }
             });
           });
 
+          // Facultatif : arrondi final du total_price
+          Object.values(petsitterMap).forEach(p => {
+            p.total_price = Math.round(p.total_price * 100) / 100;
+          });
           commonPetsitters = Object.values(petsitterMap);
         }
 
@@ -74,24 +87,41 @@ export default function MatchingResultsPage() {
     try {
       const token = localStorage.getItem('token');
       // ✅ Enregistrement des syntheticOffers liés à ce contract
-      const syntheticOffers = Object.values(petsitter.syntheticOffers); // { animalId: syntheticOffer }
+      // const syntheticOffers = Object.values(petsitter.syntheticOffers); // { animalId: syntheticOffer }
 
-      console.log(petsitter.syntheticOffers)
+      // console.log(petsitter.syntheticOffers)
 
-      await axios.post(`${process.env.REACT_APP_API_BASE}/api/offer/synthetic`, syntheticOffers, {
+      const syntheticResponse = await axios.post(
+        `${process.env.REACT_APP_API_BASE}/api/offer/synthetic`,
+        petsitter.syntheticOffers,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const createdOffers = syntheticResponse.data; // tableau avec au moins id + animalId
+
+      // Associe chaque id à son entrée d'origine
+      petsitter.syntheticOffers = petsitter.syntheticOffers.map((offerItem) => {
+        const match = createdOffers.find(
+          (o) => parseInt(o.animalId) === parseInt(offerItem.animalId)
+        );
+
+        if (match) {
+          offerItem.syntheticOffer.offerId = match.id; // Injecte l'id retourné
+        }
+
+        return offerItem;
+      });
+
+      const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/contract`, { 
+        petsitter, 
+        requestData
+      }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/contracts`, {
-      //   petsitter_id: petsitter.id,
-      //   owner_id: connectedUser.id, // Utilise ton contexte auth ici
-      //   total_price: petsitter.totalPrice,
-      //   estimate: false,
-      // });
+      const contract = response.data;
 
-      // const contract = response.data;
-
-      // navigate('/contracts/' + contract.id);
+      navigate('/contracts/' + contract.id);
     } catch (error) {
       console.error("Erreur lors de la création du contrat ou des offres :", error);
       alert("Une erreur est survenue.");
