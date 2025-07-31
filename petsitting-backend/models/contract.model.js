@@ -27,7 +27,7 @@ module.exports = (sequelize) => {
   });
 
   Contract.associate = (models) => {
-    Contract.hasOne(models.AdvertOfferContract, { foreignKey: 'contract_id' });
+    Contract.hasMany(models.AdvertOfferContract, { foreignKey: 'contract_id' });
   };
 
   return Contract;

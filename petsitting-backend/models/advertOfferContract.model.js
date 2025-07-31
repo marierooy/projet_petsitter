@@ -43,7 +43,7 @@ module.exports = (sequelize) => {
       }
     },
   }, {
-    tableName: 'advert_offer_contracts',
+    tableName: 'AdvertOfferContracts',
     timestamps: true,
   });
 

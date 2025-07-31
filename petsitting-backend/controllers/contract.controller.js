@@ -13,6 +13,18 @@ const createContract = async (req, res) => {
   }
 };
 
+const getUserContracts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const contracts = await contractService.getContractsForUser(userId);
+    res.status(200).json(contracts);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des contrats :', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
 module.exports = {
+  getUserContracts,
   createContract,
 };

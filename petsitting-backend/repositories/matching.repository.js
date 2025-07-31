@@ -287,6 +287,10 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
         totalDays += days;
         const dailyPrice = prestation + totalServicesPrice + (careModeIsHome ? travel * maxFrequence : 0);
         totalPrice += dailyPrice * days;
+        console.log('daily_price', dailyPrice);
+        console.log('prestation', prestation);
+        console.log('totalServicesPrice', totalServicesPrice);
+        console.log('travel', travel);
         totalOfferPrice = prestation * days;
         totalTravelPrice = (careModeIsHome ? travel * maxFrequence * days : 0)
       }

@@ -33,6 +33,7 @@ const Navbar = () => {
         <>
           <Link to="/mes-animaux" style={{ marginRight: '1rem' }}>Mes animaux</Link>
           <Link to="/mes-informations" style={{ marginRight: '1rem' }}>Mes informations</Link>
+          <Link to="/mes-contrats" style={{ marginRight: '1rem' }}>Mes contrats</Link>
           <button onClick={logout}>Déconnexion</button>
         </>
       ) : (

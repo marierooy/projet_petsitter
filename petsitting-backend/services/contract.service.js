@@ -1,4 +1,4 @@
-const { Contract, AdvertOfferContract } = require('../models');
+const { Contract, AdvertOfferContract, OfferServiceOccurence, Advert, Offer, Service, Occurence, User, Sequelize } = require('../models');
 
 const createContract = async ({ petsitter, requestData, ownerId }) => {
 
@@ -13,7 +13,6 @@ const createContract = async ({ petsitter, requestData, ownerId }) => {
 
   for (const syntheticOfferAnimal of syntheticOffers) {
     const { syntheticOffer, animalId } = syntheticOfferAnimal;
-    console.log(syntheticOffer);
 
     // Retrouver l'advertId correspondant dans requestData
     const matchingRequest = requestData.find(
@@ -36,6 +35,34 @@ const createContract = async ({ petsitter, requestData, ownerId }) => {
   return contract;
 };
 
+const getContractsForUser = async (userId) => {
+    const contracts = await Contract.findAll({
+        // where: { [Op.or]: [{ petsitterId: userId }, { ownerId: userId }] },
+        include: [{
+            model: AdvertOfferContract,
+            include: [
+            {
+                model: Offer,
+                include: [
+                {
+                    model: OfferServiceOccurence,
+                    as: 'offerServiceOccurences',
+                    include: ['service', 'occurence'],
+                },
+                ],
+            },
+            {
+                model: Advert,
+                include: ['animal', 'careMode']
+            }
+            ],
+        }],
+    });
+
+    return contracts
+};
+
 module.exports = {
   createContract,
+  getContractsForUser
 };

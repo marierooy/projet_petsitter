@@ -14,6 +14,7 @@ import UserEditPage from './pages/UserEditPage';
 import BookingRequestPage from './pages/BookingRequestPage';
 import AdvertsPage from './pages/AdvertsPage';
 import MatchingResultsPage from './pages/MatchingResultsPage';
+import ContractDetailPage from './pages/ContractDetailPage';
 
 const App = () => {
   return (
@@ -88,6 +89,7 @@ const App = () => {
             } 
           />
           <Route path="/matching-results" element={<MatchingResultsPage />} />
+          <Route path="/mes-contrats" element={<ContractDetailPage />} />
         </Routes>
       </Router>
     </AuthProvider>

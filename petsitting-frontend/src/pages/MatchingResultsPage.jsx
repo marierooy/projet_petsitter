@@ -28,7 +28,7 @@ export default function MatchingResultsPage() {
         } else {
           const results = await Promise.all(
             requestData.map((data) => axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, data))
-          );
+          ); console.log('results', results)
 
           const listOfIdSets = results.map((res) =>
             new Set(res.data.map((p) => p.id))
@@ -121,7 +121,7 @@ export default function MatchingResultsPage() {
 
       const contract = response.data;
 
-      navigate('/contracts/' + contract.id);
+      // navigate('/mes-contrats');
     } catch (error) {
       console.error("Erreur lors de la création du contrat ou des offres :", error);
       alert("Une erreur est survenue.");
