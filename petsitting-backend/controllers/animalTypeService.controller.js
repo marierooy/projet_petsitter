@@ -47,5 +47,5 @@ const updateServicesForAnimalType = async (req, res) => {
 module.exports = {
   getServicesForAnimalType,
   updateServicesForAnimalType,
-  getServicesAndOccurencesUnified
+  getServicesAndOccurencesUnified,
 };

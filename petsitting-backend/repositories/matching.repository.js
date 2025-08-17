@@ -1,5 +1,5 @@
-const { User, Animal, Offer, OfferServiceOccurence, Availability, CareMode, AnimalType, Role, Occurence } = require('../models');
-const { Op } = require('sequelize');
+const { User, Animal, Offer, OfferServiceOccurence, Availability, AvailabilityType, CareMode, AnimalType, Role, Occurence, Evaluate } = require('../models');
+const { fn, col, Op } = require('sequelize');
 const { differenceInCalendarDays, parseISO, isBefore, isAfter, isEqual, addDays } = require('date-fns');
 const fetch = require('node-fetch');
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -44,6 +44,13 @@ const getBirdDistance = async (origin, destination) => {
 
   return { distanceInKm: distance };
 };
+
+async function getHomeCareModeId() {
+  const homeCareMode = await CareMode.findOne({
+    where: { label: 'home' }
+  });
+  return homeCareMode ? homeCareMode.id : null;
+}
 
 const rebuildSyntheticOffer = async (
   usedOffers,
@@ -100,6 +107,15 @@ const getOccurenceFactor = (label) => {
     case '2 fois par jour': return 2;
     case '3 fois par jour': return 3;
     default: return 0;
+  }
+};
+
+const isOccurenceAFrequence = (label) => {
+  switch (label.toLowerCase()) {
+    case '1 fois': return false;
+    case '2 fois': return false;
+    case '3 fois': return false;
+    default: return true;
   }
 };
 
@@ -163,7 +179,17 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
   const users = await User.findAll({
     where: { id: { [Op.not]: userId } },
     include: [
-      { model: Role, where: { name: 'petsitter' }, through: { attributes: [] } },
+      {
+        model: Role,
+        where: { name: 'petsitter' },
+        through: { attributes: [] }
+      },
+      {
+        model: Evaluate,
+        as: 'evaluations',
+        attributes: ['rate'], // juste la note
+        required: false
+      },
       {
         model: Availability,
         as: 'availabilities',
@@ -173,9 +199,13 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
         },
         include: [
           {
+            model: AvailabilityType,
+            as: 'availabilityType',
+            where: { label: { [Op.ne]: 'Petsitting' } }
+          },
+          {
             model: Offer,
             as: 'offers',
-            // where: { animalTypeId: animal.animalTypeId },
             include: [
               {
                 model: OfferServiceOccurence,
@@ -231,7 +261,6 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
       let totalOfferPrice = 0;
       let totalTravelPrice = 0;
       const servicesWithTotalPrice = [];
-      let totalDays = 0;
 
       for (const availability of group) {
         const offer = availability.offers.find(o => {
@@ -253,7 +282,16 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
         const travel = offer.travel_price || 0;
         let maxFrequence = 0;
         let totalServicesPrice = 0;
-        const days = differenceInCalendarDays(safeParseDate(availability.end_date), safeParseDate(availability.start_date)) + 1;
+        const start = safeParseDate(availability.start_date) > safeParseDate(startDate)
+          ? safeParseDate(availability.start_date)
+          : safeParseDate(startDate);
+
+        const end = safeParseDate(availability.end_date) < safeParseDate(endDate)
+          ? safeParseDate(availability.end_date)
+          : safeParseDate(endDate);
+
+        const days = differenceInCalendarDays(end, start) + 1;
+        const totalDays = differenceInCalendarDays(safeParseDate(endDate), safeParseDate(startDate)) + 1;
 
         for (const { serviceId, occurrenceId } of services) {
           const found = offer.offerServiceOccurences.find(
@@ -275,7 +313,8 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
                 price: priceToAdd
               });
             }
-            totalServicesPrice += found.price || 0;
+            const factor = isOccurenceAFrequence(found.occurence.label) ? 1 : totalDays;
+            totalServicesPrice += (found.price || 0)/factor;
             if (found.occurence?.label) {
               const freq = getOccurenceFactor(found.occurence.label);
               maxFrequence = Math.max(maxFrequence, freq);
@@ -283,16 +322,24 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
           }
         }
 
-        const careModeIsHome = offer.careModes.some(c => c.id === parseInt(careModeId));
-        totalDays += days;
-        const dailyPrice = prestation + totalServicesPrice + (careModeIsHome ? travel * maxFrequence : 0);
+        const homeCareModeId = await getHomeCareModeId();
+        const careModeIsHome = parseInt(careModeId) === parseInt(homeCareModeId);
+        // console.log('careModeId', parseInt(careModeId));
+        // console.log('homeCareModeId', parseInt(homeCareModeId));
+        const dailyPrice = prestation + totalServicesPrice + (careModeIsHome ? travel * 2 * maxFrequence : 0);
         totalPrice += dailyPrice * days;
-        console.log('daily_price', dailyPrice);
-        console.log('prestation', prestation);
-        console.log('totalServicesPrice', totalServicesPrice);
-        console.log('travel', travel);
-        totalOfferPrice = prestation * days;
-        totalTravelPrice = (careModeIsHome ? travel * maxFrequence * days : 0)
+        // console.log('daily_price', dailyPrice);
+        // console.log('prestation', prestation);
+        // console.log('totalServicesPrice', totalServicesPrice);
+        // console.log('travel', travel);
+        // console.log('careModeIsHome', careModeIsHome);
+        // console.log('maxFrequence', maxFrequence);
+        // console.log('totalPrice', totalPrice);
+        // console.log('days', days);
+        // console.log('start', start);
+        // console.log('end', end);
+        totalOfferPrice += prestation * days;
+        totalTravelPrice += (careModeIsHome ? travel * maxFrequence * 2 * days : 0)
       }
 
       if (!isValid) continue;
@@ -310,8 +357,16 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
       
       const distanceInfo = await getBirdDistance(ownerAddress, formatAddress(user));
 
+      console.log(user);
+
+      const rates = user.evaluations?.map(e => e.rate) || [];
+      const averageRating = rates.length
+        ? rates.reduce((sum, r) => sum + r, 0) / rates.length
+        : null;
+
       results.push({
         ...user.toJSON(),
+        averageRating,
         totalPrice: Math.round(totalPrice * 100) / 100,
         distanceInKm: Math.round(distanceInfo.distanceInKm * 10) / 10,
         syntheticOffer: syntheticOffer,

@@ -20,5 +20,5 @@ module.exports = {
   getServices,
   updateServices,
   getServicesAndOccurencesForAllAnimalTypes,
-  getServicesAndOccurencesByLabel
+  getServicesAndOccurencesByLabel,
 };

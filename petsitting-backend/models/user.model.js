@@ -98,6 +98,10 @@ module.exports = (sequelize) => {
       foreignKey: "user_id",
       otherKey: "role_id"
     });
+    User.hasMany(models.Animal, {
+      foreignKey: 'userId',
+      as: 'animals',
+    });
     User.hasMany(models.Offer, {
       foreignKey: 'petsitterId',
       as: 'offers'
@@ -112,6 +116,8 @@ module.exports = (sequelize) => {
     });
     User.hasMany(models.AdvertOfferContract, { as: 'PetsitterContracts', foreignKey: 'petsitter_id' });
     User.hasMany(models.AdvertOfferContract, { as: 'OwnerContracts', foreignKey: 'owner_id' });
+    User.hasMany(models.Evaluate, { as: 'evaluations', foreignKey: 'target_user_id' })
+    User.hasMany(models.Evaluate, { as: 'evaluates', foreignKey: 'user_id' })
   };
   return User;
 };

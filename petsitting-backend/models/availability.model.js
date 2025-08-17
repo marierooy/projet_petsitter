@@ -47,7 +47,7 @@ module.exports = (sequelize) => {
     });
     Availability.belongsTo(models.AvailabilityType, { 
       foreignKey: 'availabilityTypeId',
-      as: 'type'
+      as: 'availabilityType'
     });
     Availability.hasMany(models.Offer, {
       foreignKey: 'availabilityId',

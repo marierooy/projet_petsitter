@@ -85,4 +85,10 @@ function parseFields(body) {
   return parsed;
 }
 
-module.exports = { register, login, getById, updateById };
+const getPetsitterProfile = async (id) => {
+  const user = await userRepo.findPetsitterProfileById(id);
+  if (!user) throw { status: 404, message: 'Petsitter introuvable.' };
+  return user;
+};
+
+module.exports = { register, login, getById, updateById, getPetsitterProfile };

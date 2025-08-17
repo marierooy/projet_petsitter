@@ -33,7 +33,7 @@ function AuthForm() {
       checked ? roles.add(value) : roles.delete(value);
       return { ...prev, roles: Array.from(roles) };
     });
-};
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -50,11 +50,11 @@ function AuthForm() {
       const data = await res.json();
 
       if (!res.ok) {
-          if (Array.isArray(data.errors)) {
-            setError(data.errors); // tableau
-          } else {
-            setError(data.error || 'Erreur inconnue'); // string
-          }
+        if (Array.isArray(data.errors)) {
+          setError(data.errors); // tableau
+        } else {
+          setError(data.error || 'Erreur inconnue'); // string
+        }
       } else {
         setMessage(data.message + ' ' + JSON.stringify(data.user) || 'Succès !');
         if (data.token) {
@@ -75,79 +75,118 @@ function AuthForm() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: 'auto' }}>
-      <h2>{isRegister ? 'Créer un compte' : 'Se connecter'}</h2>
-      <form onSubmit={handleSubmit} class='gap-1'>
+    <div className="card" style={{ maxWidth: 400, margin: 'auto', marginTop: '2rem' }}>
+      <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">{isRegister ? 'Créer un compte' : 'Se connecter'}</h2>
+      <form onSubmit={handleSubmit} className="gap-1">
         {isRegister && (
           <>
-            <label class="labelForm" for="petsitter-checkbox">
+            <label className="labelForm" htmlFor="petsitter-checkbox">
               <input
                 type="checkbox"
                 name="roles"
                 value="petsitter"
                 checked={formData.roles.includes("petsitter")}
                 onChange={handleCheckboxChange}
-                class='checkboxForm'
-                id="petsitter-checkbox" 
+                className="checkboxForm"
+                id="petsitter-checkbox"
               />
               &nbsp; Petsitter
             </label>
-            <label class="labelForm" for="owner-checkbox">
+            <label className="labelForm" htmlFor="owner-checkbox">
               <input
                 type="checkbox"
                 name="roles"
                 value="owner"
                 checked={formData.roles.includes("owner")}
                 onChange={handleCheckboxChange}
-                class='checkboxForm'
-                id="owner-checkbox" 
+                className="checkboxForm"
+                id="owner-checkbox"
               />
               &nbsp; Propriétaire
             </label>
 
-            <label class="labelForm">
+            <label className="labelForm">
               Prénom:
-              <input class='inputForm' type="text" name="first_name" value={formData.first_name} onChange={handleChange} required={isRegister} />
+              <input
+                className="inputForm"
+                type="text"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                required={isRegister}
+              />
             </label>
-            <label class="labelForm">
+            <label className="labelForm">
               Nom:
-              <input class='inputForm' type="text" name="last_name" value={formData.last_name} onChange={handleChange} required={isRegister} />
+              <input
+                className="inputForm"
+                type="text"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                required={isRegister}
+              />
             </label>
           </>
         )}
-        <label class="labelForm">
+
+        <label className="labelForm">
           Email:
-          <input class='inputForm' type="email" name="email" value={formData.email} onChange={handleChange} required />
+          <input
+            className="inputForm"
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
         </label>
-        <label class="labelForm">
+        <label className="labelForm">
           Mot de passe:
-          <input class='inputForm' type="password" name="password" value={formData.password} onChange={handleChange} required />
+          <input
+            className="inputForm"
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
         </label>
 
-        <button class="btn-blue" type="submit">{isRegister ? 'S\'inscrire' : 'Se connecter'}</button>
+        <button className="btn-green" type="submit">
+          {isRegister ? "S'inscrire" : 'Se connecter'}
+        </button>
       </form>
 
-      {message && <p style={{ color: 'green' }}>{message}</p>}
+      {message && <div className="alert-success">{message}</div>}
       {Array.isArray(error) ? (
-        <ul style={{ color: 'red' }}>
-          {error.map((err, i) => (
-            <li key={i}>{err.msg}</li>
-          ))}
-        </ul>
+        <div className="alert-error">
+          <ul>
+            {error.map((err, i) => (
+              <li key={i}>{err.msg}</li>
+            ))}
+          </ul>
+        </div>
       ) : error ? (
-        <p style={{ color: 'red' }}>{error}</p>
+        <div className="alert-error">{error}</div>
       ) : null}
 
-      <hr />
+      <hr style={{ margin: '1.5rem 0' }} />
 
-      {isRegister ? 'Déjà un compte ?': 'Pas encore de compte ?'}
-      <button onClick={() => {
-        setIsRegister(!isRegister);
-        setMessage(null);
-        setError(null);
-      }} class='btn-green ml-2'>
-        {isRegister ? 'Se connecter' : 'S\'inscrire'}
-      </button>
+      <div className="text-center">
+        {isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?'}
+        <button
+          onClick={() => {
+            setIsRegister(!isRegister);
+            setMessage(null);
+            setError(null);
+          }}
+          className="btn-blue"
+          style={{ marginLeft: '0.5rem' }}
+        >
+          {isRegister ? 'Se connecter' : "S'inscrire"}
+        </button>
+      </div>
     </div>
   );
 }

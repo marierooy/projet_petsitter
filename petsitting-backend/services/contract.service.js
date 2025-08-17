@@ -1,4 +1,6 @@
 const { Contract, AdvertOfferContract, OfferServiceOccurence, Advert, Offer, Service, Occurence, User, Sequelize } = require('../models');
+const contractRepository = require('../repositories/contract.repository');
+const { Op } = require('sequelize');
 
 const createContract = async ({ petsitter, requestData, ownerId }) => {
 
@@ -7,7 +9,7 @@ const createContract = async ({ petsitter, requestData, ownerId }) => {
   const contract = await Contract.create({
       petsitter_validation: false,
       owner_validation: true,
-      total_price: petsitter.total_price,
+      total_price: petsitter.total_allAnimals_price,
       estimate: null
   });
 
@@ -62,7 +64,57 @@ const getContractsForUser = async (userId) => {
     return contracts
 };
 
+const deleteContract = async (id) => {
+    const offerLinks = await AdvertOfferContract.findAll({
+        where: { contract_id: id },
+        attributes: ['offer_id']
+    });
+    const offerIds = offerLinks.map(a => a.advert_id);
+
+    await Offer.destroy({ where: { id: offerIds } });
+    await AdvertOfferContract.destroy({ where: { contract_id: id } });
+    await Contract.destroy({ where: { id } });
+};
+
+const validateContract = async (contractId, userId) => {
+  const contract = await Contract.findByPk(contractId, {
+    include: {
+      model: AdvertOfferContract,
+      required: true,
+    },
+  });
+
+  if (!contract) throw new Error("Contrat introuvable");
+
+  const aoc = contract.AdvertOfferContracts?.[0]; // si 1 seul lien par contrat
+
+  if (!aoc) throw new Error("Lien annonce/offre non trouvé pour ce contrat");
+
+  let updatedFields = {};
+
+  if (aoc.owner_id === userId) {
+    if (contract.owner_validation) throw new Error("Déjà validé par le propriétaire");
+    updatedFields.owner_validation = true;
+  } else if (aoc.petsitter_id === userId) {
+    if (contract.petsitter_validation) throw new Error("Déjà validé par le petsitter");
+    updatedFields.petsitter_validation = true;
+  } else {
+    throw new Error("Vous n'êtes pas impliqué dans ce contrat");
+  }
+
+  await contract.update(updatedFields);
+  return contract;
+};
+
+const getContractsByPetsitterIdOwnerId = async (petsitterId, ownerId) => {
+  const contracts = await contractRepository.findByPetsitterIdOwnerId(petsitterId, ownerId);
+  return contracts;
+};
+
 module.exports = {
   createContract,
-  getContractsForUser
+  getContractsForUser,
+  deleteContract,
+  validateContract,
+  getContractsByPetsitterIdOwnerId
 };

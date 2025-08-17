@@ -29,12 +29,12 @@ export function useAvailabilities() {
       const data = await response.json();
       const formatted = data.map(av => ({
         id: av.id,
-        title: av.type?.label || 'Disponible',
+        title: av.availabilityType?.label || 'Disponible',
         type_id: av.type?.id,
         start: parseISO(av.start_date),
         end: parseISO(av.end_date),
         allDay: true,
-        color: av.type?.color || '#4ade80'
+        color: av.availabilityType?.color || '#4ade80'
       }));
 
       setEvents(formatted);
@@ -143,7 +143,6 @@ export function useAnimalTypes(availabilityId) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedOccurrences, setSelectedOccurrences] = useState({});
-  console.log('hookanimalTypes', animalTypes)
 
   const getToken = () => localStorage.getItem('token');
 

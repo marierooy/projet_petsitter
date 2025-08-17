@@ -323,77 +323,102 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
   }));
 
   return (
-    <div className="mt-8 border-t pt-6 bg-white">
-      <div className="max-w-4xl mx-auto">
-        <h3 className="text-xl font-bold mb-6 text-gray-900">
-          Paramétrage de la disponibilité du {selectedEvent?.start?.toLocaleDateString()} au  {selectedEvent?.end?.toLocaleDateString()}
-        </h3>
+    <div className="mt-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+        {/* Titre */}
+        <header>
+          <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">
+            Paramétrage de la disponibilité du{" "}
+            {selectedEvent?.start?.toLocaleDateString()} au{" "}
+            {selectedEvent?.end?.toLocaleDateString()}
+          </h2>
+        </header>
 
+        {/* Liste des types d'animaux */}
         <div className="space-y-4 mb-6">
-          {animalTypes.map(animal => (
+          {animalTypes.map((animal) => (
             <AnimalTypeAccordion
               key={animal.id}
               animal={animal}
               onToggle={(animalId) => toggleAccordion(animalId)}
               onRemove={(animalId) => removeAnimalType(animalId)}
-              onUpdateCareMode={(animalId, mode, value) => updateCareMode(animalId, mode, value)}
-              onUpdateField={(animalId, field, value) => updateAnimalField(animalId, field, value)}
-              onRemoveService={(animalId, serviceId) => removeService(animalId, serviceId)}
+              onUpdateCareMode={(animalId, mode, value) =>
+                updateCareMode(animalId, mode, value)
+              }
+              onUpdateField={(animalId, field, value) =>
+                updateAnimalField(animalId, field, value)
+              }
+              onRemoveService={(animalId, serviceId) =>
+                removeService(animalId, serviceId)
+              }
               onAddService={(animalId) => addSelectedService(animalId)}
-              onSelectService={(animalId, serviceId) => handleSelectService(animalId, serviceId)}
+              onSelectService={(animalId, serviceId) =>
+                handleSelectService(animalId, serviceId)
+              }
               selectedServiceIndex={selectedServiceIndex}
               selectedOccurrences={selectedOccurrences}
-              onToggleOccurrence={(animalId, serviceId, occId) => toggleOccurrenceChecked(animalId, serviceId, occId)}
-              onUpdateOccurrencePrice={(animalId, serviceId, occId, price) => updateOccurrencePrice(animalId, serviceId, occId, price)}
-              onApplyServiceToAllAnimals={(serviceId, fromAnimalId) => onApplyServiceToAllAnimals(serviceId, fromAnimalId)}
-              onApplyOfferToAllAnimals = {(fromAnimalId) => onApplyOfferToAllAnimals(fromAnimalId)}
+              onToggleOccurrence={(animalId, serviceId, occId) =>
+                toggleOccurrenceChecked(animalId, serviceId, occId)
+              }
+              onUpdateOccurrencePrice={(animalId, serviceId, occId, price) =>
+                updateOccurrencePrice(animalId, serviceId, occId, price)
+              }
+              onApplyServiceToAllAnimals={(serviceId, fromAnimalId) =>
+                onApplyServiceToAllAnimals(serviceId, fromAnimalId)
+              }
+              onApplyOfferToAllAnimals={(fromAnimalId) =>
+                onApplyOfferToAllAnimals(fromAnimalId)
+              }
               version={occurrenceVersion}
             />
           ))}
         </div>
 
-        <div className="flex gap-3 items-end mb-6 p-4 bg-gray-50 rounded-lg">
+        {/* Ajouter un type d'animal */}
+        <div className="flex gap-3 items-end mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div className="flex-1">
-            <Label className="text-sm font-medium text-gray-700">
-              Ajouter un type d'animal
-            </Label>
-            <Select value={selectedAnimalId} onChange={setSelectedAnimalId} options={animalsOptions}>
-              <SelectTrigger />
-              <SelectContent>
-                {animalsOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-md font-bold text-green-700 mb-2 block">Ajouter un type d'animal</label>
+            <select
+              value={selectedAnimalId}
+              onChange={(e) => setSelectedAnimalId(e.target.value)}
+              className="inputForm"
+            >
+              <option value="">-- Sélectionner --</option>
+              {animalsOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <Button
+          <button
             onClick={handleAddAnimal}
             disabled={!selectedAnimalId}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className={`px-4 py-2 rounded text-white ${
+                    selectedAnimalId ? 'btn-green' : 'btn-green !bg-green-300 cursor-not-allowed'
+                  }`}
           >
             + Ajouter
-          </Button>
+          </button>
         </div>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <Button
-            variant="outline"
+        {/* Boutons de validation */}
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <button
+            type="button"
             onClick={onClose}
-            className="bg-gray-400 hover:bg-gray-500 text-white"
+            className="btn-red px-4 py-2"
           >
             Fermer le paramétrage
-          </Button>
-
-          <Button
+          </button>
+          <button
             onClick={handleSaveAllOffers}
             disabled={isSaving}
-            className="bg-green-500 hover:bg-green-600 text-white px-6"
+            className="btn-green px-6 py-2"
           >
-            {isSaving ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
+            {isSaving ? "Enregistrement..." : "Enregistrer"}
+          </button>
         </div>
       </div>
     </div>

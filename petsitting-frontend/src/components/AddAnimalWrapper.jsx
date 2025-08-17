@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import AddEditAnimalForm from '../pages/AddEditAnimalForm';
+import AddEditAnimalForm from './AddEditAnimalForm';
 
 function AddAnimalWrapper() {
   const navigate = useNavigate();

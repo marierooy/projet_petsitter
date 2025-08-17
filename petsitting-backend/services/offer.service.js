@@ -2,6 +2,7 @@ const { CareMode, OfferServiceOccurence, AvailabilityType, Availability } = requ
 const offerRepository = require('../repositories/offer.repository');
 const animalTypeRepository = require('../repositories/animalType.repository');
 const animalTypeServiceRepository = require('../repositories/animalTypeService.repository');
+const availabilityRepository = require('../repositories/availability.repository');
 
 const updateOffer = async (animalId, petsitterId, data) => {
   const {
@@ -23,7 +24,9 @@ const updateOffer = async (animalId, petsitterId, data) => {
   // 1. Trouver ou créer l'offre
   let offer = await offerRepository.findByAnimalPetsitterAndAvailability(animalId, petsitterId, availabilityId);
 
-  if (!offer) {
+  const availabilityLabel = await availabilityRepository.getAvailabilityTypeByAvailabilityId(availabilityId);
+
+  if (!offer || availabilityLabel === 'Petsitting') {
     offer = await offerRepository.create({
       animalTypeId: animalId,
       petsitterId,
@@ -182,7 +185,7 @@ const saveSyntheticOffers = async (syntheticOffers, petsitterId) => {
         },
         defaults: {
           label: 'Petsitting',
-          color: 'red',
+          color: '#4a90e2',
           petsitterId
         }
     });

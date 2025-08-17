@@ -26,7 +26,6 @@ export function AnimalTypeAccordion({
   onUpdateOccurrencePrice,
   onApplyServiceToAllAnimals,
   onApplyOfferToAllAnimals,
-  version
 }) {
 
   // const [localOccurrences, setLocalOccurrences] = useState(selectedOccurrences);
@@ -51,7 +50,7 @@ export function AnimalTypeAccordion({
     <div className="border rounded-lg mb-4 overflow-visible">
       {/* Accordion Header */}
       <div
-        className="w-full text-left px-4 py-3 bg-gray-100 hover:bg-gray-200 flex justify-between items-center cursor-pointer transition-colors"
+        className="w-full text-left p-5 bg-green-50 hover:bg-green-100 focus:ring-green-400 font-semibold text-green-800 flex justify-between items-center transition"
         onClick={() => onToggle(id)}
         role="button"
         tabIndex={0}
@@ -62,47 +61,78 @@ export function AnimalTypeAccordion({
           }
         }}
       >
-        <span className="font-medium text-gray-900">{animal.name}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">{animal.isOpen ? '−' : '+'}</span>
-          <Button
-            variant="ghost"
-            size="sm"
+        <span className="font-semibold text-green-800">{animal.name}</span>
+
+        <div className="flex items-center gap-3">
+          {/* Toggle Icon */}
+          <svg
+            className={`w-5 h-5 transform transition-transform duration-300 ${
+              animal.isOpen ? 'rotate-180' : ''
+            }`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+          </svg>
+
+          {/* Remove Button */}
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onRemove(id);
             }}
-            className="appearance-none bg-transparent border-none p-0 m-0 text-red-500 hover:bg-transparent hover:text-red-500 focus:outline-none focus:ring-0 active:bg-transparent"
+            className="appearance-none bg-transparent hover:scale-110 border-none p-0 text-red-500 hover:text-red-600 hover:bg-transparent focus:outline-none"
             title="Supprimer ce type d'animal"
           >
             ❌
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Accordion Content */}
       {animal.isOpen && (
         <div className="p-4 bg-white border-t">
-          <div className="flex justify-center my-2">
+          {/* Apply to all animals */}
+          <div className="relative flex justify-between items-start">
+            <h4 className="text-lg font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">Configuration :</h4>
             <button
-              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              className="group bg-transparent p-1 hover:scale-110 hover:bg-transparent transition-transform"
               onClick={() => onApplyOfferToAllAnimals(animal.id)}
             >
-              Appliquer cette config à tous les animaux
+              <img
+                src="https://img.icons8.com/?size=100&id=85799&format=png&color=000000"
+                alt="Appliquer à tous les animaux"
+                className="w-8 h-8"
+              />
+
+              {/* Tooltip */}
+              <span className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
+                  px-3 py-2 text-xs text-white bg-gray-800 rounded opacity-0 
+                  pointer-events-none transition-opacity duration-200 
+                  group-hover:opacity-100 w-32 text-center">
+                Appliquer cette configuration à tous les animaux
+              </span>
             </button>
           </div>
+
           {/* Care Modes */}
           <div className="space-y-3 mb-4">
             {['home', 'sitter'].map((mode) => (
               <div key={mode} className="flex items-center space-x-2">
-                <Checkbox
+                <input
                   id={`${mode}-${id}`}
+                  type="checkbox"
                   checked={animal.careModes?.[mode] || false}
                   onChange={(e) => onUpdateCareMode(id, mode, e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-green-600 transition duration-150 ease-in-out"
                 />
-                <Label htmlFor={`${mode}-${id}`} className="text-sm">
+                <label htmlFor={`${mode}-${id}`} className="labelForm">
                   {mode === 'home' ? 'Garde à domicile' : 'Garde chez le petsitter'}
-                </Label>
+                </label>
               </div>
             ))}
           </div>
@@ -110,47 +140,47 @@ export function AnimalTypeAccordion({
           {/* Number and Pricing Fields */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div>
-              <Label htmlFor={`animals-${id}`} className="text-sm font-medium">
+              <label htmlFor={`animals-${id}`} className="labelForm">
                 Nombre d'animaux max
-              </Label>
-              <Input
+              </label>
+              <input
                 id={`animals-${id}`}
                 type="number"
                 placeholder="Nombre animaux max"
                 value={animal.number_animals || ''}
                 onChange={(e) => onUpdateField(id, 'number_animals', e.target.value)}
-                className="mt-1"
+                className="inputForm"
               />
             </div>
 
             <div>
-              <Label htmlFor={`price-${id}`} className="text-sm font-medium">
-                Prix prestation (€)
-              </Label>
-              <Input
+              <label htmlFor={`price-${id}`} className="labelForm">
+                Prix prestation (€ / jour)
+              </label>
+              <input
                 id={`price-${id}`}
                 type="number"
                 step="0.01"
                 placeholder="Prix prestation"
                 value={animal.offer_price || ''}
                 onChange={(e) => onUpdateField(id, 'offer_price', e.target.value)}
-                className="mt-1"
+                className="inputForm"
               />
             </div>
 
             {animal.careModes?.home && (
               <div>
-                <Label htmlFor={`travel-${id}`} className="text-sm font-medium">
-                  Prix déplacement (€)
-                </Label>
-                <Input
+                <label htmlFor={`travel-${id}`} className="labelForm">
+                  Prix déplacement (€ / dépl.)
+                </label>
+                <input
                   id={`travel-${id}`}
                   type="number"
                   step="0.01"
                   placeholder="Prix déplacement"
                   value={animal.travel_price || ''}
                   onChange={(e) => onUpdateField(id, 'travel_price', e.target.value)}
-                  className="mt-1 max-w-xs"
+                  className="inputForm"
                 />
               </div>
             )}
@@ -158,61 +188,70 @@ export function AnimalTypeAccordion({
 
           {/* Services Section */}
           <div className="border-t pt-4">
-            <h4 className="font-semibold text-gray-900 mb-3">Services :</h4>
+            <h4 className="text-lg font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">Services :</h4>
 
             {animal.services?.map((service) => (
               <div key={service.id} className="p-3 bg-gray-50 rounded-lg mb-3">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium text-gray-900">{service.label}</span>
+                  <span className="inline-block bg-green-100 text-green-800 text-md font-semibold px-3 py-1 rounded-full">{service.label}</span>
                   <div className="flex gap-2 items-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 p-0 m-0"
+                    <button
                       onClick={() => onApplyServiceToAllAnimals(service.id, id)}
-                      title="Appliquer à tous les animaux"
+                      className="group bg-transparent p-1 hover:scale-110 hover:bg-transparent transition-transform"
                     >
-                      Appliquer à tous les animaux
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                      <img
+                        src="https://img.icons8.com/?size=100&id=85799&format=png&color=000000"
+                        alt="Appliquer à tous les animaux"
+                        className="w-8 h-8"
+                      />
+
+                      {/* Tooltip */}
+                      <span className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
+                          px-3 py-2 text-xs text-white bg-gray-800 rounded opacity-0 
+                          pointer-events-none transition-opacity duration-200 
+                          group-hover:opacity-100 w-32 text-center">
+                        Appliquer ces choix de service à tous les animaux
+                      </span>
+                    </button>
+                    <button
                       onClick={() => onRemoveService(id, service.id)}
-                      className="appearance-none bg-transparent border-none p-0 m-0 text-red-500 hover:bg-transparent hover:text-red-500 focus:outline-none focus:ring-0 active:bg-transparent"
+                      className="appearance-none hover:scale-110 bg-transparent border-none p-0 m-0 text-red-500 hover:bg-transparent hover:text-red-600 focus:outline-none"
                     >
                       ❌
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
                 <div className="ml-2">
                   {service.occurences?.map((occ) => {
-                    const selectedOcc = Array.isArray(selectedOccurrences?.[animal.id]?.[service.id])? selectedOccurrences[animal.id][service.id].find(o => o.id === occ.id) : undefined;
+                    const selectedOcc = Array.isArray(selectedOccurrences?.[animal.id]?.[service.id])
+                      ? selectedOccurrences[animal.id][service.id].find((o) => o.id === occ.id)
+                      : undefined;
                     const isChecked = selectedOcc?.checked || false;
 
                     return (
                       <div key={occ.id} className="flex items-center gap-3 h-[50px] overflow-y-auto">
                         <div className="flex items-center space-x-2">
-                          <Checkbox
+                          <input
                             id={`occ-${animal.id}-${service.id}-${occ.id}`}
+                            type="checkbox"
                             checked={isChecked}
                             onChange={() => onToggleOccurrence(animal.id, service.id, occ.id)}
+                            className="form-checkbox h-5 w-5 text-green-600 transition duration-150 ease-in-out"
                           />
-                          <Label htmlFor={`occ-${animal.id}-${service.id}-${occ.id}`} className="text-sm">
+                          <label htmlFor={`occ-${animal.id}-${service.id}-${occ.id}`} className="labelForm !mb-0">
                             {occ.label}
-                          </Label>
+                          </label>
                         </div>
 
                         {isChecked && (
-                          <Input
+                          <input
                             type="number"
                             step="0.01"
                             value={selectedOcc?.price || ''}
-                            placeholder="Prix €"
-                            onChange={(e) =>
-                              onUpdateOccurrencePrice(animal.id, service.id, occ.id, e.target.value)
-                            }
-                            className="w-24"
+                            placeholder="Prix additif €"
+                            onChange={(e) => onUpdateOccurrencePrice(animal.id, service.id, occ.id, e.target.value)}
+                            className="inputForm !w-44"
                           />
                         )}
                       </div>
@@ -226,29 +265,29 @@ export function AnimalTypeAccordion({
             {availableServices.length > 0 && (
               <div className="flex gap-2 items-end mt-2">
                 <div className="flex-1">
-                  <Label className="text-sm font-medium">Ajouter un service</Label>
-                  <Select
+                  <label className="text-md font-bold text-green-700 mb-2 block">Ajouter un service</label>
+                  <select
                     value={selectedServiceIndex[id] || ''}
-                    onChange={(val) => onSelectService(id, val)}
-                    options={servicesOptions}
+                    onChange={(e) => onSelectService(id, e.target.value)}
+                    className="inputForm"
                   >
-                    <SelectTrigger />
-                    <SelectContent>
-                      {servicesOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <option value="">-- Sélectionner --</option>
+                    {servicesOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <Button
+                <button
                   onClick={() => onAddService(id)}
                   disabled={!selectedServiceIndex?.[id]}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className={`px-4 py-2 rounded text-white ${
+                    selectedServiceIndex?.[id] ? 'btn-blue' : 'btn-gray !bg-gray-300 cursor-not-allowed'
+                  }`}
                 >
                   + Ajouter
-                </Button>
+                </button>
               </div>
             )}
           </div>

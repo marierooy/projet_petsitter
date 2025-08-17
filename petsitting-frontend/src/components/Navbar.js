@@ -5,40 +5,40 @@ const Navbar = () => {
   const { user, logout } = useAuth();
 
   return (
-    <nav style={{ padding: '1rem', backgroundColor: '#f5f5f5' }}>
-      <Link to="/" style={{ marginRight: '1rem' }}>Accueil</Link>
+    <nav className="navbar-container">
+      <ul className="navbar-list">
+        <li><Link to="/" className="nav-link">Accueil</Link></li>
 
-      {user?.roles?.includes('admin') ? (
-        <>
-          <Link to="/services-animaux" style={{ marginRight: '1rem' }}>Attribuer des services aux types d'animaux</Link>
-          <Link to="/occurences-services" style={{ marginRight: '1rem' }}>Attribuer des occurences aux services</Link>
-        </>): ''
-      }
-      {user?.roles?.includes('petsitter') ? (
-        <>
-          <Link to="/disponibilites" style={{ marginRight: '1rem' }}>Calendrier des disponibilités</Link>
-        </>): ''
-      }
-      {user?.roles?.includes('owner') || !user ? (
-        <>
-          <Link to="/chercher-petsitting" style={{ marginRight: '1rem' }}>Chercher un petsitting</Link>
-        </>): ''
-      }
-      {user?.roles?.includes('owner') ? (
-        <>
-          <Link to="/mes-annonces" style={{ marginRight: '1rem' }}>Mes annonces</Link>
-        </>): ''
-      }
-      {user ? (
-        <>
-          <Link to="/mes-animaux" style={{ marginRight: '1rem' }}>Mes animaux</Link>
-          <Link to="/mes-informations" style={{ marginRight: '1rem' }}>Mes informations</Link>
-          <Link to="/mes-contrats" style={{ marginRight: '1rem' }}>Mes contrats</Link>
-          <button onClick={logout}>Déconnexion</button>
-        </>
-      ) : (
-        <Link to="/login">Connexion</Link>
-      )}
+        {user?.roles?.includes('admin') && (
+          <>
+            <li><Link to="/services-animaux" className="nav-link">Attribuer des services aux types d'animaux</Link></li>
+            <li><Link to="/occurences-services" className="nav-link">Attribuer des occurences aux services</Link></li>
+          </>
+        )}
+
+        {user?.roles?.includes('petsitter') && (
+          <li><Link to="/disponibilites" className="nav-link">Calendrier</Link></li>
+        )}
+
+        {(user?.roles?.includes('owner') || !user) && (
+          <li><Link to="/chercher-petsitting" className="nav-link">Chercher un petsitting</Link></li>
+        )}
+
+        {/* {user?.roles?.includes('owner') && (
+          <li><Link to="/mes-annonces" className="nav-link">Mes annonces</Link></li>
+        )} */}
+
+        {user ? (
+          <>
+            <li><Link to="/mes-animaux" className="nav-link">Mes animaux</Link></li>
+            <li><Link to="/mes-informations" className="nav-link">Mes informations</Link></li>
+            <li><Link to="/mes-contrats" className="nav-link">Mes contrats</Link></li>
+            <li><button onClick={logout} className="btn-green btn-logout">Déconnexion</button></li>
+          </>
+        ) : (
+          <li><Link to="/login" className="btn-blue !text-white nav-link">Connexion</Link></li>
+        )}
+      </ul>
     </nav>
   );
 };

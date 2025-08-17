@@ -95,6 +95,7 @@ const getServicesByAnimalType = async (animalTypeId) => {
   const animalType = await AnimalType.findByPk(animalTypeId, {
     include: {
       model: Service,
+      as: 'services',
       through: { attributes: [] } // Ne renvoie pas la table pivot
     }
   });

@@ -28,6 +28,7 @@ module.exports = (sequelize) => {
 
   Contract.associate = (models) => {
     Contract.hasMany(models.AdvertOfferContract, { foreignKey: 'contract_id' });
+    Contract.hasMany(models.Evaluate, { foreignKey: 'contract_id', as: 'evaluations' });
   };
 
   return Contract;

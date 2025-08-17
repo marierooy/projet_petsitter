@@ -1,7 +1,5 @@
 import { X } from 'lucide-react';
 import React, { useState } from 'react';
-import { Select, SelectTrigger, SelectContent, SelectItem } from 'components/ui/select';
-import { Button } from 'components/ui/button';
 
 export function AnimalAccordion({
   animal,
@@ -13,16 +11,10 @@ export function AnimalAccordion({
 }) {
   const selectedServiceIds = Object.keys(selectedServiceIndex || {}).map(Number);
   const availableServices = allServices.filter(s => !selectedServiceIds.includes(s.id));
-
-  const availableServicesOptions = availableServices.map(service => ({
-    value: service.id.toString(),
-    label: service.label,
-  }));
-
   const [serviceToAdd, setServiceToAdd] = useState('');
 
   return (
-    <div className="mt-4 border rounded p-4 bg-gray-50">
+    <div className="mt-4 border rounded-xl p-4 bg-gray-50">
       <h2 className="font-semibold text-lg mb-2">Services pour {animal.name}</h2>
 
       <ul className="space-y-2 mb-4">
@@ -32,33 +24,33 @@ export function AnimalAccordion({
 
           return (
             <li key={serviceId} className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">{service?.label}</div>
-                <div className="text-sm text-gray-600">
-                  Fréquence : {selectedOccurrence ? service?.occurences?.find(o => o.id === selectedOccurrence)?.label : 'Non sélectionnée'}
-                </div>
+              <div className="flex-[5]">
+                <div className="inline-block bg-green-100 text-green-800 text-md font-semibold px-3 py-1 rounded-full">{service?.label}</div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Select
+
+              <div className="flex items-center space-x-2 flex-[5]">
+                <select
                   value={selectedOccurrence ? selectedOccurrence.toString() : ''}
-                  onChange={(val) => onSelectOccurrence(serviceId, parseInt(val, 10))}
+                  onChange={(e) =>
+                    onSelectOccurrence(serviceId, parseInt(e.target.value, 10))
+                  }
+                  className="inputForm w-32"
                 >
-                  <SelectTrigger className="w-32" />
-                  <SelectContent>
-                    {service?.occurences?.map(o => (
-                      <SelectItem key={o.id} value={o.id.toString()}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="">Sélectionner</option>
+                  {service?.occurences?.map(o => (
+                    <option key={o.id} value={o.id.toString()}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
 
                 <button
+                  type="button"
                   onClick={() => onRemoveService(serviceId)}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 hover:scale-110"
                   title="Supprimer le service"
                 >
-                  <X />
+                  ❌
                 </button>
               </div>
             </li>
@@ -67,20 +59,26 @@ export function AnimalAccordion({
       </ul>
 
       {availableServices.length > 0 && (
-        <div className="flex space-x-2 items-center">
-          <Select value={serviceToAdd} onChange={setServiceToAdd} options={availableServicesOptions} className="flex-[2]">
-            <SelectTrigger />
-            <SelectContent>
-              {availableServices.map(service => (
-                <SelectItem key={service.id} value={service.id.toString()}>
-                  {service.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center space-x-2">
+          <select
+            value={serviceToAdd}
+            onChange={(e) => setServiceToAdd(e.target.value)}
+            className="inputForm flex-[7]"
+          >
+            <option value="">Sélectionner un service</option>
+            {availableServices.map(service => (
+              <option key={service.id} value={service.id.toString()}>
+                {service.label}
+              </option>
+            ))}
+          </select>
 
-          <Button
-            className="flex-[1]"
+          <button
+            type="button"
+            disabled={!serviceToAdd}
+            className={`px-4 py-2 flex-[3] rounded text-white ${
+              serviceToAdd ? 'btn-blue' : 'btn-gray !bg-gray-300 cursor-not-allowed'
+            }`}
             onClick={() => {
               if (serviceToAdd) {
                 onAddService(parseInt(serviceToAdd, 10));
@@ -89,7 +87,7 @@ export function AnimalAccordion({
             }}
           >
             + Ajouter service
-          </Button>
+          </button>
         </div>
       )}
     </div>

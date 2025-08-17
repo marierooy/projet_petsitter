@@ -1,4 +1,4 @@
-const { User, Role } = require('../models');
+const { User, Role, Animal, Availability, AvailabilityType, Offer, OfferServiceOccurence, Service, Occurence, CareMode, AnimalType } = require('../models');
 
 // Crée un utilisateur simple (sans rôle ici)
 const createUser = (userData) => User.create(userData);
@@ -73,6 +73,68 @@ const updateById = async (id, data) => {
   return updatedUser;
 };
 
+const findPetsitterProfileById = async (petsitterId) => {
+  return await User.findByPk(petsitterId, {
+    attributes: {
+      exclude: ['password', 'createdAt', 'updatedAt']
+    },
+    include: [
+      {
+        model: Animal,
+        as: 'animals',
+        include: [
+          {
+            model: AnimalType,
+            as: 'animalType'
+          }
+        ]
+      },
+      {
+        model: Availability,
+        as: 'availabilities',
+        include: [
+          {
+            model: Offer,
+            as: 'offers',
+            include: [
+              {
+                model: CareMode,
+                as: 'careModes',
+                through: { attributes: [] }, // Ne pas inclure les colonnes de la table pivot
+              },
+              {
+                model: OfferServiceOccurence,
+                as: 'offerServiceOccurences',
+                include: [
+                  {
+                    model: Service,
+                    as: 'service'
+                  },
+                  {
+                    model: Occurence,
+                    as: 'occurence'
+                  }
+                ]
+              },
+              {
+                model: AnimalType,
+                as: 'animalType'
+              }
+            ]
+          },
+          {
+            model: AvailabilityType,
+            as: 'availabilityType'
+          }
+        ]
+      }
+    ],
+    order: [
+      ['availabilities', 'offers', 'animalType', 'id', 'ASC']
+    ]
+  });
+};
+
 module.exports = {
   createUser,
   findByEmail,
@@ -81,5 +143,6 @@ module.exports = {
   addRoleToUser,
   getUserRoles,
   findByEmailWithRoles,
-  updateById
+  updateById,
+  findPetsitterProfileById
 };

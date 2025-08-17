@@ -66,7 +66,7 @@ const deleteOffer = async (req, res) => {
 };
 
 const saveSyntheticOffers = async (req, res) => {
-  const petsitterId = req.user.id;
+  const petsitterId = req.params.petsitterId;
   const syntheticOffers = req.body;
 
   try {

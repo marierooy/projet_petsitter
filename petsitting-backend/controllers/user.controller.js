@@ -39,4 +39,15 @@ const updateCurrentUser = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getCurrentUser, updateCurrentUser };
+const getPetsitterProfile = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const profile = await userService.getPetsitterProfile(id);
+    res.json(profile);
+  } catch (error) {
+    console.error(error);
+    res.status(error.status || 500).json({ error: error.message || 'Erreur serveur' });
+  }
+};
+
+module.exports = { register, login, getCurrentUser, updateCurrentUser, getPetsitterProfile };

@@ -7,7 +7,7 @@ const { getServicesForAnimalType, updateServicesForAnimalType, getServicesAndOcc
 const offerController = require('../controllers/offer.controller');
 
 router.get('/', animalTypeController.getAllAnimalTypes);
-router.get('/:id/services', authMiddleware, roleMiddleware('admin'), getServicesForAnimalType);
+router.get('/:id/services', authMiddleware, getServicesForAnimalType);
 router.put('/:id/services', authMiddleware, roleMiddleware('admin'), updateServicesForAnimalType);
 router.get('/services/occurences', getServicesAndOccurencesUnified);
 router.get('/offer', authMiddleware, offerController.getOffers);

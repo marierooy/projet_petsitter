@@ -1,28 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import Modal from 'react-modal';
+import React, { useEffect, useState } from "react";
+import Modal from "react-modal";
 
-export function AvailabilityTypeModal({ isOpen, onClose, onSubmit, initialData })
-{
-  const [label, setLabel] = useState('');
-  const [color, setColor] = useState('#cccccc');
+export function AvailabilityTypeModal({ isOpen, onClose, onSubmit, initialData }) {
+  const [formData, setFormData] = useState({
+    label: "",
+    color: "#cccccc",
+  });
 
   useEffect(() => {
     if (initialData) {
-      setLabel(initialData.label || '');
-      setColor(initialData.color || '#cccccc');
+      setFormData({
+        label: initialData.label || "",
+        color: initialData.color || "#cccccc",
+      });
     } else {
-      setLabel('');
-      setColor('#cccccc');
+      setFormData({
+        label: "",
+        color: "#cccccc",
+      });
     }
   }, [initialData, isOpen]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!label.trim()) return;
-
+    if (!formData.label.trim()) return;
     onSubmit({
-      label: label.trim(),
-      color,
+      label: formData.label.trim(),
+      color: formData.color,
     });
   };
 
@@ -32,51 +44,62 @@ export function AvailabilityTypeModal({ isOpen, onClose, onSubmit, initialData }
       onRequestClose={onClose}
       contentLabel="Type de disponibilité"
       ariaHideApp={false}
-      className="max-w-md mx-auto mt-20 bg-white p-6 rounded shadow"
+      className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-auto mt-20 outline-none"
       overlayClassName="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-start z-50"
     >
-      <h2 className="text-lg font-semibold mb-4">
-        {initialData ? 'Modifier le type' : 'Ajouter un type'}
-      </h2>
-
+      <header>
+        <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">
+          {initialData ? "Modifier" : "Ajouter"} un type de disponibilité
+        </h2>
+      </header>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Nom du type</label>
-          <input
-            type="text"
-            className="w-full border px-3 py-2 rounded"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            required
-          />
+        <div className="grid grid-cols-2 gap-6">
+          {/* Nom du type */}
+          <div className="col-span-2">
+            <label className="labelForm">
+              Nom du type
+            </label>
+            <input
+              type="text"
+              name="label"
+              required
+              value={formData.label}
+              onChange={handleChange}
+              className="inputForm"
+            />
+          </div>
+
+          {/* Couleur */}
+          <div className="col-span-2 md:col-span-1">
+            <label className="labelForm">
+              Couleur
+            </label>
+            <input
+              type="color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+              className="w-32 h-16 p-0 border rounded-md inputForm cursor-pointer"
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Couleur</label>
-          <input
-            type="color"
-            className="w-12 h-8 p-0 border rounded"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="flex justify-end gap-2 pt-4">
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-600 hover:underline text-sm"
+            className="btn-red px-4 py-2"
           >
             Annuler
           </button>
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700"
+            className="btn-green px-4 py-2"
           >
-            {initialData ? 'Enregistrer' : 'Ajouter'}
+            {initialData ? "Enregistrer" : "Ajouter"}
           </button>
         </div>
       </form>
     </Modal>
   );
-};
+}

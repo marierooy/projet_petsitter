@@ -20,7 +20,6 @@ function ServiceOccurencePage() {
     const servicesData = res.data;
     setServices(servicesData);
 
-    // Initialise selectedOccurences
     const initialSelected = {};
     for (const service of servicesData) {
       const resOcc = await axios.get(`${process.env.REACT_APP_API_BASE}/api/service/${service.id}/occurences`, {
@@ -78,33 +77,59 @@ function ServiceOccurencePage() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Associer les occurrences aux services</h2>
+    <div className="p-6 max-w-3xl mx-auto">
+      <h2 className="text-3xl font-bold mb-6 text-center text-green-700">
+        Associer les occurrences aux services
+      </h2>
+
       {services.map(service => (
-        <div key={service.id} className="mb-4 border rounded">
+        <div
+          key={service.id}
+          className="mb-5 border border-gray-300 rounded-lg shadow-sm overflow-hidden"
+        >
           <button
             onClick={() => toggleAccordion(service.id)}
-            className="w-full text-left p-4 font-semibold bg-gray-100 hover:bg-gray-200"
+            className="w-full text-left p-5 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 font-semibold text-green-800 flex justify-between items-center transition"
+            aria-expanded={expandedServiceId === service.id}
           >
-            {service.label}
+            <span>{service.label}</span>
+            <svg
+              className={`w-5 h-5 transform transition-transform duration-300 ${
+                expandedServiceId === service.id ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+            </svg>
           </button>
+
           {expandedServiceId === service.id && (
-            <div className="p-4 bg-white">
-              <div className="grid grid-cols-2 gap-2">
+            <div className="p-6 bg-white border-t border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-64 overflow-auto">
                 {occurences.map(occ => (
-                  <label key={occ.id} className="flex items-center gap-2">
+                  <label
+                    key={occ.id}
+                    className="flex items-center gap-3 cursor-pointer select-none"
+                  >
                     <input
                       type="checkbox"
                       checked={!!selectedOccurences[service.id]?.[occ.id]}
                       onChange={() => handleCheckboxChange(service.id, occ.id)}
+                      className="form-checkbox h-5 w-5 text-green-600 transition duration-150 ease-in-out"
                     />
-                    {occ.label}
+                    <span className="text-gray-800">{occ.label}</span>
                   </label>
                 ))}
               </div>
+
               <button
                 onClick={() => handleSave(service.id)}
-                className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="mt-6 inline-block px-6 py-2 bg-green-600 text-white rounded-md font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
               >
                 Enregistrer
               </button>

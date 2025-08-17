@@ -1,4 +1,5 @@
 const { AvailabilityType } = require('../models');
+const { Op } = require('sequelize');
 
 const createAvailabilityType = async (data, petsitterId) => {
   return await AvailabilityType.create({
@@ -16,7 +17,7 @@ const deleteAvailabilityType = async (id) => {
 };
 
 const getByPetsitterId = async (petsitterId) => {
-  return await AvailabilityType.findAll({ where: { petsitterId } });
+  return await AvailabilityType.findAll({ where: { petsitterId, label: { [Op.ne]: "Petsitting" } } });
 };
 
 module.exports = {

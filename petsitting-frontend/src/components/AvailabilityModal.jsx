@@ -1,9 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/ui/dialog';
-import { Button } from 'components/ui/button';
-import { Input } from 'components/ui/input';
-import { Textarea } from 'components/ui/textarea';
-import { Label } from 'components/ui/label';
 import { createFormData } from 'utils/types';
 
 export function AvailabilityModal({ 
@@ -11,7 +6,7 @@ export function AvailabilityModal({
   onClose, 
   onSubmit, 
   initialData, 
-  availabilityTypes = [], // <-- ajout ici
+  availabilityTypes = [], 
   isEditing = false 
 }) {
   const [formData, setFormData] = useState(createFormData());
@@ -22,7 +17,7 @@ export function AvailabilityModal({
       setFormData({
         ...createFormData(),
         ...initialData,
-        availabilityTypeId: initialData.availabilityTypeId || '' // sécurité
+        availabilityTypeId: initialData.availabilityTypeId || ''
       });
     } else {
       setFormData(createFormData());
@@ -44,7 +39,7 @@ export function AvailabilityModal({
       return;
     }
 
-     setIsSubmitting(true);
+    setIsSubmitting(true);
     
     try {
       const success = await onSubmit(formData);
@@ -64,26 +59,38 @@ export function AvailabilityModal({
     setFormData(createFormData());
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md mx-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-semibold">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
+      onClick={handleClose}
+    >
+      <div
+        className="max-w-md w-full bg-white p-6 rounded-lg shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header>
+          <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">
             {isEditing ? 'Modifier la disponibilité' : 'Nouvelle disponibilité'}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
-          {/* Champ de sélection du type */}
-          <div className="space-y-2">
-            <Label htmlFor="availability_type_id">Type de disponibilité</Label>
+          </h2>
+        </header>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Type */}
+          <div>
+            <label htmlFor="availability_type_id" className="labelForm">
+              Type de disponibilité
+            </label>
             <select
               id="availability_type_id"
               name="availabilityTypeId"
               value={formData.availabilityTypeId || ''}
               onChange={handleInputChange}
               required
-              className="border p-2 rounded w-full"
+              className="inputForm"
             >
               <option value="">-- Choisir un type --</option>
               {availabilityTypes.map((type) => (
@@ -95,53 +102,60 @@ export function AvailabilityModal({
           </div>
 
           {/* Date début */}
-          <div className="space-y-2">
-            <Label htmlFor="start_date">Date de début</Label>
-            <Input
+          <div>
+            <label htmlFor="start_date" className="labelForm">
+              Date de début
+            </label>
+            <input
               id="start_date"
               type="date"
               name="start_date"
               value={formData.start_date}
               onChange={handleInputChange}
               required
-              className="border p-2 rounded"
+              className="inputForm"
             />
           </div>
-          
+
           {/* Date fin */}
-          <div className="space-y-2">
-            <Label htmlFor="end_date">Date de fin</Label>
-            <Input
+          <div>
+            <label htmlFor="end_date" className="labelForm">
+              Date de fin
+            </label>
+            <input
               id="end_date"
               type="date"
               name="end_date"
               value={formData.end_date}
               onChange={handleInputChange}
               required
-              className="border p-2 rounded"
+              className="inputForm"
             />
           </div>
 
           {/* Boutons */}
-          <div className="flex justify-end gap-2 mt-6">
-            <Button 
-              type="button" 
-              variant="outline" 
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
               onClick={handleClose}
               disabled={isSubmitting}
+              className="btn-red"
+              aria-label="Annuler"
             >
               Annuler
-            </Button>
-            <Button 
-              type="submit" 
+            </button>
+
+            <button
+              type="submit"
               disabled={isSubmitting}
-              className="bg-green-500 hover:bg-green-600 text-white"
+              className="btn-green"
+              aria-label="Enregistrer"
             >
               {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-            </Button>
+            </button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

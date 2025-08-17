@@ -187,8 +187,6 @@ export default function BookingRequestPage() {
         // Ajoute l'id dans l'objet original pour pouvoir l'utiliser ensuite
         advertsPayload[i].advertId = createdAdvert.id;
       }
-
-      alert('Demandes envoyées !');
       navigate('/matching-results', { state: advertsPayload });
       // reset si souhaité
     } catch (error) {
@@ -199,195 +197,209 @@ export default function BookingRequestPage() {
 
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Demande de garde</h1>
+    <div className="min-h-screen container flex justify-center items-start p-6">
+        <div className="w-[650px] max-w-4xl bg-white shadow-lg rounded-2xl p-8 space-y-8">
+        <h1 className="text-2xl font-bold mb-6 inline-block w-auto border-b-4 border-green-500" style={{ color: 'var(--color-green-dark)' }}>Demande de garde</h1>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label>Date de début</label>
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="labelForm">Date de début</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="inputForm"
+            />
+          </div>
+          <div>
+            <label className="labelForm">Date de fin</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="inputForm"
+            />
+          </div>
         </div>
-        <div>
-          <label>Date de fin</label>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-        </div>
-      </div>
 
-      <div>
-        <label>Mode de garde</label>
-        <Select value={selectedCareMode} onChange={setSelectedCareMode} options={careModeOptions}>
-          <SelectTrigger />
-          <SelectContent>
+        {/* Mode de garde */}
+        <div>
+          <label className="labelForm">Mode de garde</label>
+          <select
+            value={selectedCareMode}
+            onChange={e => setSelectedCareMode(e.target.value)}
+            className="inputForm"
+          >
+            <option value="">Sélectionner un mode de garde</option>
             {careModes.map(mode => (
-              <SelectItem key={mode.id} value={mode.id.toString()}>
+              <option key={mode.id} value={mode.id}>
                 {mode.label}
-              </SelectItem>
+              </option>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
+          </select>
+        </div>
 
-      <div>
-        <label>Animal</label>
-        {isAuthenticated ? (
-          <div className="flex space-x-2 items-center">
-            <Select
-              value={pendingAnimalId}
-              onChange={(id) => setPendingAnimalId(id)}
-              options={animalOptions}
-              className="flex-[2]"
-            >
-              <SelectTrigger />
-              <SelectContent>
+        {/* Animal */}
+        <div>
+          <label className="labelForm">Animal</label>
+          {isAuthenticated ? (
+            <div className="flex space-x-2 items-center">
+              <select
+                value={pendingAnimalId}
+                onChange={e => setPendingAnimalId(e.target.value)}
+                className="inputForm flex-[7]"
+              >
+                <option value="">Sélectionner un animal</option>
                 {animals
                   .filter(animal => !(animal.id in selectedServices))
                   .map(animal => (
-                    <SelectItem key={animal.id} value={animal.id.toString()}>
+                    <option key={animal.id} value={animal.id}>
                       {animal.name}
-                    </SelectItem>
+                    </option>
                   ))}
-              </SelectContent>
-            </Select>
-            <Button
-              className="flex-[1]"
-              onClick={() => {
-                if (!pendingAnimalId) {
-                  alert('Veuillez sélectionner un animal');
-                  return;
-                }
-                const selectedAnimal = animals.find(a => a.id.toString() === pendingAnimalId);
-                if (!selectedAnimal) return;
+              </select>
+              <button
+                type="button"
+                disabled={!pendingAnimalId}
+                className={`px-4 py-2 flex-[3] rounded text-white ${
+                  pendingAnimalId ? 'btn-blue' : 'btn-gray !bg-gray-300 cursor-not-allowed'
+                }`}
+                onClick={() => {
+                  if (!pendingAnimalId) {
+                    alert('Veuillez sélectionner un animal');
+                    return;
+                  }
+                  const selectedAnimal = animals.find(a => a.id.toString() === pendingAnimalId);
+                  if (!selectedAnimal) return;
 
-                setSelectedAnimalId(pendingAnimalId);
-                setExpandedAnimals(prev => ({
-                  ...prev,
-                  [pendingAnimalId]: true,
-                }));
-
-                // Chercher les données de l'annonce récente correspondante
-                const recent = recentAdverts.find(a => a.animalId === selectedAnimal.id);
-                let defaultServices = {};
-
-                // S’il y a une annonce récente, préremplir les services + occurrences
-                if (recent) {
-                  recent.serviceOccurrences.forEach(s => {
-                    defaultServices[s.serviceId] = s.occurrenceId;
-                  });
-                } else {
-                  // Sinon, juste les services sans occurrence
-                  selectedAnimal.services?.forEach(service => {
-                    defaultServices[service.id] = '';
-                  });
-                }
-
-                setSelectedServices(prev => ({
-                  ...prev,
-                  [pendingAnimalId]: defaultServices
-                }));
-                setPendingAnimalId(''); // Réinitialise après ajout
-              }}
-            >
-              + Ajouter cet animal
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            <Input
-              placeholder="Nom de l'animal"
-              value={newAnimal.name}
-              onChange={e => setNewAnimal({ ...newAnimal, name: e.target.value })}
-            />
-            <Select
-              value={newAnimal.type}
-              onChange={(value) => setNewAnimal({ ...newAnimal, type: value })}
-              options={animalTypeOptions}
-            >
-              <SelectTrigger />
-              <SelectContent>
-                {animalTypes.map(type => (
-                  <SelectItem key={type.id} value={type.name}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={async () => {
-                if (!newAnimal.name || !newAnimal.type) {
-                  alert('Veuillez renseigner un nom et un type d’animal.');
-                  return;
-                }
-
-                try {
-                  // Appel API pour récupérer les services liés au type
-                  const res = await axios.get(
-                    `${process.env.REACT_APP_API_BASE}/api/animal-type/services/occurences?label=${newAnimal.type}`);
-
-                  const animalToAdd = res.data;
-
-                  // Générer un ID temporaire (par ex. un timestamp ou UUID si besoin)
-                  const tempId = `temp-${Date.now()}`;
-
-                  animalToAdd.id = tempId;
-                  animalToAdd.name = newAnimal.name;
-                  animalToAdd.animalType = newAnimal.type;
-
-                  setAnimals(prev => [...prev, animalToAdd]);
-
-                  setSelectedAnimalId(tempId);
-                  setExpandedAnimals(prev => ({ ...prev, [tempId]: true }));
-
-                  const defaultServices = {};
-                  animalToAdd.services.forEach(service => {
-                    defaultServices[service.id] = ''; // fréquence non encore choisie
-                  });
-                  setSelectedServices(prev => ({
+                  setSelectedAnimalId(pendingAnimalId);
+                  setExpandedAnimals(prev => ({
                     ...prev,
-                    [tempId]: defaultServices
+                    [pendingAnimalId]: true,
                   }));
 
-                  // Reset du formulaire
-                  setNewAnimal({ name: '', type: '' });
-                } catch (error) {
-                  console.error(error);
-                  alert("Erreur lors du chargement des services pour ce type d’animal.");
+                  const recent = recentAdverts.find(a => a.animalId === selectedAnimal.id);
+                  let defaultServices = {};
+
+                  if (recent) {
+                    recent.serviceOccurrences.forEach(s => {
+                      defaultServices[s.serviceId] = s.occurrenceId;
+                    });
+                  } else {
+                    selectedAnimal.services?.forEach(service => {
+                      defaultServices[service.id] = '';
+                    });
+                  }
+
+                  setSelectedServices(prev => ({
+                    ...prev,
+                    [pendingAnimalId]: defaultServices
+                  }));
+                  setPendingAnimalId('');
+                }}
+              >
+                + Ajouter cet animal
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                placeholder="Nom de l'animal"
+                value={newAnimal.name}
+                onChange={e => setNewAnimal({ ...newAnimal, name: e.target.value })}
+                className="inputForm"
+              />
+              <select
+                value={newAnimal.type}
+                onChange={e => setNewAnimal({ ...newAnimal, type: e.target.value })}
+                className="inputForm"
+              >
+                <option value="">Type d'animal</option>
+                {animalTypes.map(type => (
+                  <option key={type.id} value={type.name}>
+                    {type.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={async () => {
+                  if (!newAnimal.name || !newAnimal.type) {
+                    alert('Veuillez renseigner un nom et un type d’animal.');
+                    return;
+                  }
+
+                  try {
+                    const res = await axios.get(
+                      `${process.env.REACT_APP_API_BASE}/api/animal-type/services/occurences?label=${newAnimal.type}`
+                    );
+
+                    const animalToAdd = res.data;
+                    const tempId = `temp-${Date.now()}`;
+                    animalToAdd.id = tempId;
+                    animalToAdd.name = newAnimal.name;
+                    animalToAdd.animalType = newAnimal.type;
+
+                    setAnimals(prev => [...prev, animalToAdd]);
+                    setSelectedAnimalId(tempId);
+                    setExpandedAnimals(prev => ({ ...prev, [tempId]: true }));
+
+                    const defaultServices = {};
+                    animalToAdd.services.forEach(service => {
+                      defaultServices[service.id] = '';
+                    });
+                    setSelectedServices(prev => ({
+                      ...prev,
+                      [tempId]: defaultServices
+                    }));
+
+                    setNewAnimal({ name: '', type: '' });
+                  } catch (error) {
+                    console.error(error);
+                    alert("Erreur lors du chargement des services pour ce type d’animal.");
+                  }
+                }}
+              >
+                + Ajouter cet animal
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Liste des animaux ajoutés */}
+        {Object.keys(selectedServices).map(animalId => {
+          const animal = animals.find(a => a.id.toString() === animalId);
+          if (!animal) return null;
+
+          return (
+            <div key={animalId} className="border rounded-xl p-4 my-4 relative">
+              <button
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700 hover:scale-110"
+                onClick={() => handleRemoveAnimal(animal.id)}
+              >
+                ❌
+              </button>
+
+              <AnimalAccordion
+                animal={animal}
+                selectedServiceIndex={selectedServices[animal.id] || {}}
+                onAddService={(serviceId) => handleAddService(animal.id, serviceId)}
+                onRemoveService={(serviceId) => handleRemoveService(animal.id, serviceId)}
+                onSelectOccurrence={(serviceId, occurrenceId) =>
+                  handleSelectOccurrence(animal.id, serviceId, occurrenceId)
                 }
-              }}
-            >
-              + Ajouter cet animal
-            </Button>
-          </div>      
-        )}
+                allServices={animal.allServices || []}
+              />
+            </div>
+          );
+        })}
+
+        <button type="button" className="btn-blue" onClick={handleSubmit}>
+          Envoyer la demande
+        </button>
       </div>
-
-      {Object.keys(selectedServices).map(animalId => {
-        const animal = animals.find(a => a.id.toString() === animalId);
-        if (!animal) return null;
-
-        return (
-          <div key={animalId} className="border rounded p-4 my-4 relative">
-            <button
-              className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-              onClick={() => handleRemoveAnimal(animal.id)}
-            >
-              <X />
-            </button>
-
-            <AnimalAccordion
-              animal={animal}
-              selectedServiceIndex={selectedServices[animal.id] || {}}
-              onAddService={(serviceId) => handleAddService(animal.id, serviceId)}
-              onRemoveService={(serviceId) => handleRemoveService(animal.id, serviceId)}
-              onSelectOccurrence={(serviceId, occurrenceId) =>
-                handleSelectOccurrence(animal.id, serviceId, occurrenceId)
-              }
-              allServices={animal.allServices || []}
-            />
-          </div>
-        );
-      })}
-
-      <Button onClick={handleSubmit}>Envoyer la demande</Button>
     </div>
   );
 }

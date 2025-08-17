@@ -1,7 +1,6 @@
 const { Availability, AvailabilityType } = require('../models');
 const offerRepository = require('../repositories/offer.repository');
 const animalTypeRepository = require('../repositories/animalType.repository');
-const offerService = require('../services/offer.service');
 
 async function findAllByPetsitter(petsitterId) {
   return await Availability.findAll({
@@ -10,7 +9,7 @@ async function findAllByPetsitter(petsitterId) {
     include: [
       {
         model: AvailabilityType,
-        as: 'type', 
+        as: 'availabilityType',
         attributes: ['id', 'label', 'color'] 
       }
     ]
@@ -18,6 +17,7 @@ async function findAllByPetsitter(petsitterId) {
 }
 
 const createAvailability = async (petsitterId, data) => {
+  const offerService = require('../services/offer.service');
   const availability = await Availability.create({...data, petsitterId});
   const animalTypes = await animalTypeRepository.findAll();
   const animalTypeResults = await Promise.all(
@@ -53,10 +53,27 @@ const findAvailabilityById = async (id) => {
   return await Availability.findByPk(id);
 };
 
+const getAvailabilityTypeByAvailabilityId = async (availabilityId) => {
+  const availability = await Availability.findByPk(availabilityId, {
+    include: {
+      model: AvailabilityType,
+      as: 'availabilityType', // attention au nom défini dans l’association
+    },
+  });
+
+  if (!availability) {
+    throw new Error('Availability non trouvée');
+  }
+
+  return availability.availabilityType.label;
+};
+
+
 module.exports = {
   createAvailability,
   updateAvailability,
   deleteAvailability,
   findAvailabilityById,
-  findAllByPetsitter
+  findAllByPetsitter,
+  getAvailabilityTypeByAvailabilityId
 };

@@ -42,36 +42,34 @@ const updateRawOfferServicesAndOccurrences = async (offerId, offerServiceOccuren
   }
 };
 
-async function findOffersByUserAvailabilityAndAnimalType(petsitterId, availabilityId = null, animalTypeId) {
-  if (availabilityId) {
-    // On récupère les offres pour l'user et availability donnée (avec leurs services, etc. si besoin)
-    const offer = await Offer.findOne({
-      where: { petsitterId, availabilityId, animalTypeId },
-      include: [
-        { model: AnimalType, as: 'animalType' },
-        {
-          model: OfferServiceOccurence,
-          as: 'offerServiceOccurences',
-          include: [
-            { model: Service, as: 'service' },
-            {
-              model: Occurence,
-              as: 'occurence',   // Attention à l'alias défini dans ton association Sequelize
-            }
-          ],
-        },
-        { model: Availability, as: 'availability' },
-        {
-          model: CareMode,
-          as: 'careModes',
-          through: { attributes: [] }, // Ne pas inclure les colonnes de la table pivot
-        },
-      ],
-    });
-    if (offer) {
-      // 💡 Offres trouvées : tu peux faire une action ici
-      return offer;
-    }
+async function findOffersByUserAvailabilityAndAnimalType(petsitterId, availabilityId, animalTypeId) {
+  // On récupère les offres pour l'user et availability donnée (avec leurs services, etc. si besoin)
+  const offer = await Offer.findOne({
+    where: { petsitterId, availabilityId, animalTypeId },
+    include: [
+      { model: AnimalType, as: 'animalType' },
+      {
+        model: OfferServiceOccurence,
+        as: 'offerServiceOccurences',
+        include: [
+          { model: Service, as: 'service' },
+          {
+            model: Occurence,
+            as: 'occurence',   // Attention à l'alias défini dans ton association Sequelize
+          }
+        ],
+      },
+      { model: Availability, as: 'availability' },
+      {
+        model: CareMode,
+        as: 'careModes',
+        through: { attributes: [] }, // Ne pas inclure les colonnes de la table pivot
+      },
+    ],
+  });
+  if (offer) {
+    // 💡 Offres trouvées : tu peux faire une action ici
+    return offer;
   }
 
   const currentAvailability = await Availability.findOne({
@@ -80,7 +78,7 @@ async function findOffersByUserAvailabilityAndAnimalType(petsitterId, availabili
     }
   });
 
-  // Pas d'availabilityId fourni, on cherche la dernière disponibilité
+  // On cherche la dernière disponibilité
   const lastAvailability = await Availability.findOne({
     where: {
       petsitterId,

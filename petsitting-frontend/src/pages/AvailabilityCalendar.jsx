@@ -169,38 +169,45 @@ export default function AvailabilityCalendar() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto font-sans text-gray-900">
       {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Types de disponibilité</h3>
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 border-b border-gray-300 pb-2">
+          Types de disponibilité
+        </h2>
 
         {typesLoading ? (
-          <p className="text-gray-500 text-sm">Chargement des types...</p>
+          <p className="text-gray-500 text-sm italic">Chargement des types...</p>
         ) : (
-          <ul className="space-y-1 text-sm text-gray-700">
+          <ul className="space-y-3 text-sm text-gray-700">
             {types?.map((type) => (
-              <li key={type.id} className="p-2 rounded flex items-center gap-2 justify-between bg-gray-50">
+              <li
+                key={type.id}
+                className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              >
                 <span
-                  className="inline-block px-3 py-1 h-6 rounded font-medium flex items-center justify-center min-w-[80px] text-center"
-                  style={{ backgroundColor: type.color || '#ccc', borderRadius: '6px'}}
+                  className="inline-flex items-center justify-center min-w-[90px] px-4 py-1 rounded-md font-semibold text-black"
+                  style={{ backgroundColor: type.color || '#ccc' }}
                   title={`Couleur : ${type.color}`}
                 >
                   {type.label}
                 </span>
 
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => {
                       setEditingType(type);
                       setTypeModalOpen(true);
                     }}
-                    className="text-blue-600 hover:underline text-xs"
+                    className="btn-blue !text-sm !px-3 !py-1 font-medium rounded-md shadow-sm hover:bg-blue-700 transition-colors"
+                    aria-label={`Modifier le type ${type.label}`}
                   >
                     Modifier
                   </button>
                   <button
                     onClick={() => handleDeleteType(type.id)}
-                    className="text-red-600 hover:underline text-xs"
+                    className="btn-red !text-sm !px-3 !py-1 font-medium rounded-md shadow-sm hover:bg-red-700 transition-colors"
+                    aria-label={`Supprimer le type ${type.label}`}
                   >
                     Supprimer
                   </button>
@@ -209,31 +216,36 @@ export default function AvailabilityCalendar() {
             ))}
           </ul>
         )}
-      </div>
+      </section>
 
       <button
         onClick={() => setTypeModalOpen(true)}
-        className="text-sm text-green-600 hover:underline"
+        className="btn-green !text-sm !px-3 !py-1 font-medium rounded-md shadow-sm hover:bg-green-700 transition-colors"
+        aria-label="Ajouter un nouveau type de disponibilité"
       >
-        + Ajouter un type
+        Ajouter un type
       </button>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Disponibilités</h2>
-        
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <Button
+
+      <section className="mb-6 mt-8">
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-5 border-b border-gray-300 pb-3">
+          Calendrier
+        </h1>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <button
             onClick={handleCreateAvailability}
             disabled={loading}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2"
+            className="btn btn-green px-4 py-2 font-semibold rounded-md shadow-sm hover:bg-blue-700 transition-colors"
+            aria-label="Créer une nouvelle disponibilité"
           >
             Créer une disponibilité
-          </Button>
-          
-          <p className="text-sm text-gray-600">
+          </button>
+
+          <p className="text-md text-gray-600 max-w-md">
             Pour modifier ou paramétrer une disponibilité, cliquez dessus.
           </p>
         </div>
-      </div>
+      </section>
 
       {/* Calendar */}
       <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
@@ -252,7 +264,11 @@ export default function AvailabilityCalendar() {
             date={currentDate}
             onNavigate={(date) => setCurrentDate(date)}
             style={{ height: 500 }}
-            onSelectEvent={handleSelectEvent}
+            onSelectEvent={(event) => {
+              if (event.title !== "Petsitting") {
+                handleSelectEvent(event);
+              }
+            }}
             eventPropGetter={(event) => ({
               style: {
                 backgroundColor: event.color || '#4ade80',
@@ -260,7 +276,8 @@ export default function AvailabilityCalendar() {
                 color: 'black',
                 border: 'none',
                 fontSize: '13px',
-                padding: '2px 6px'
+                padding: '2px 6px',
+                cursor: event.title === "Petsitting" ? "not-allowed" : "pointer"
               },
             })}
             messages={{
@@ -337,31 +354,107 @@ export default function AvailabilityCalendar() {
       </div>
 
       {/* Custom styles for calendar */}
-      <style jsx>{`
-        .rbc-calendar-custom .rbc-event {
-          border-radius: 6px;
-          font-weight: 500;
-        }
-        .rbc-calendar-custom .rbc-event:hover {
-          opacity: 0.9;
-          cursor: pointer;
-        }
-        .rbc-calendar-custom .rbc-toolbar {
-          margin-bottom: 20px;
-        }
-        .rbc-calendar-custom .rbc-toolbar button {
-          border-radius: 6px;
-          padding: 8px 12px;
-          font-weight: 500;
-        }
-        .rbc-calendar-custom .rbc-toolbar button:hover {
-          background-color: #f3f4f6;
-        }
-        .rbc-calendar-custom .rbc-toolbar button.rbc-active {
-          background-color: #3b82f6;
-          color: white;
-        }
-      `}</style>
+    <style jsx>{`
+      /* Styles généraux pour tous les boutons (calendrier et autres) */
+      button {
+        background-color: #2563eb; /* bleu primaire */
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:hover, button:focus {
+        background-color: #1d4ed8; /* bleu plus foncé */
+        outline: none;
+      }
+      button:disabled {
+        background-color: #a5b4fc;
+        cursor: not-allowed;
+        color: #e0e7ff;
+      }
+
+      /* Calendrier personnalisé */
+      .rbc-calendar-custom {
+        font-family: 'Inter', sans-serif;
+      }
+
+      /* Toolbar : conteneur */
+      .rbc-calendar-custom .rbc-toolbar {
+        margin-bottom: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* Boutons dans la toolbar */
+      .rbc-calendar-custom .rbc-toolbar button {
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-weight: 600;
+        font-family: inherit;
+        color: #2563eb;
+        background-color: transparent;
+        border: 2px solid #2563eb;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .rbc-calendar-custom .rbc-toolbar button:hover {
+        background-color: #2563eb;
+        color: white;
+      }
+
+      .rbc-calendar-custom .rbc-toolbar button.rbc-active {
+        background-color: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+
+      /* Titre du mois dans la toolbar (ex: "Août 2025") */
+      .rbc-calendar-custom .rbc-toolbar-label {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #1e40af; /* bleu foncé */
+        text-transform: capitalize; /* première lettre majuscule */
+        user-select: none;
+      }
+
+      /* Événements */
+      .rbc-calendar-custom .rbc-event {
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 4px 8px;
+        color: #000000cc;
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+      }
+      .rbc-calendar-custom .rbc-event:hover {
+        opacity: 0.85;
+        cursor: pointer;
+      }
+
+      /* Grille jour/mois - lignes et colonnes */
+      .rbc-calendar-custom .rbc-day-bg {
+        border: 1px solid #e5e7eb;
+      }
+      .rbc-calendar-custom .rbc-header {
+        background-color: #f9fafb;
+        color: #374151;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border-bottom: 2px solid #2563eb;
+        text-transform: capitalize;
+      }
+
+      /* Désactiver la time gutter (pas d’heure) */
+      .rbc-calendar-custom .rbc-time-gutter {
+        display: none;
+      }
+    `}</style>
     </div>
   );
 }

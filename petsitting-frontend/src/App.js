@@ -15,6 +15,7 @@ import BookingRequestPage from './pages/BookingRequestPage';
 import AdvertsPage from './pages/AdvertsPage';
 import MatchingResultsPage from './pages/MatchingResultsPage';
 import ContractDetailPage from './pages/ContractDetailPage';
+import PetsitterProfilePage from './pages/PetsitterProfilePage';
 
 const App = () => {
   return (
@@ -90,6 +91,7 @@ const App = () => {
           />
           <Route path="/matching-results" element={<MatchingResultsPage />} />
           <Route path="/mes-contrats" element={<ContractDetailPage />} />
+          <Route path="/petsitter-profil/:id" element={<PetsitterProfilePage />} />
         </Routes>
       </Router>
     </AuthProvider>
