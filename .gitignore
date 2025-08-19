@@ -46,3 +46,5 @@ client/build/
 # Node build
 server/dist/
 server/node_modules/
+
+petsitting-backend/scripts/sync.js
