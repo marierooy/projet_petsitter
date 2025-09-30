@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from 'components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select';
-import { Label } from 'components/ui/label';
 import { AnimalTypeAccordion } from 'components/AnimalTypeAccordion';
-import { createAnimalType, createOfferPayload } from 'utils/types';
 import { useAnimalTypes } from 'utils/hooks';
 
 export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
@@ -13,6 +9,8 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
   // const [selectedOccurrences, setSelectedOccurrences] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [occurrenceVersion, setOccurrenceVersion] = useState(0);
+
+  const [errorMessage, setErrorMessage] = useState(null); // 👈 état pour erreurs
 
   // useEffect(() => {
   //   const initialSelected = {};
@@ -283,10 +281,16 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
     );
   };
 
+  function getErrorMessage(err) {
+    return err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Erreur inconnue';
+  }
+
   const handleSaveAllOffers = async () => {
     if (!selectedEvent?.id) return;
 
     setIsSaving(true);
+    setErrorMessage(null); // réinitialiser les erreurs
+
     const payload = animalTypes.map(animal => ({
       animalTypeId: animal.id,
       availabilityId: selectedEvent.id,
@@ -309,6 +313,9 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
 
     try {
       await saveAllOffers(payload);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(getErrorMessage(err));
     } finally {
       setIsSaving(false);
     }
@@ -403,6 +410,16 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
           </button>
         </div>
 
+        {/* Zone d'erreur */}
+        {errorMessage && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <strong className="font-bold">Erreur :</strong>
+              {errorMessage.map((msg, idx) => (
+                <p key={idx}>⚠️ {msg}</p>
+              ))}
+          </div>
+        )}
+
         {/* Boutons de validation */}
         <div className="flex justify-end gap-3 pt-4 border-t">
           <button
@@ -415,7 +432,7 @@ export function ConfigurationPanel({ isVisible, selectedEvent, onClose }) {
           <button
             onClick={handleSaveAllOffers}
             disabled={isSaving}
-            className="btn-green px-6 py-2"
+            className="all-offers-saving btn-green px-6 py-2"
           >
             {isSaving ? "Enregistrement..." : "Enregistrer"}
           </button>

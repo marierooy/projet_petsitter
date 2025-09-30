@@ -1,16 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from 'components/ui/button';
-import { Input } from 'components/ui/input';
-import { Label } from 'components/ui/label';
-import { Checkbox } from 'components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from 'components/ui/select';
-
 export function AnimalTypeAccordion({
   animal,
   onToggle,
@@ -45,6 +32,48 @@ export function AnimalTypeAccordion({
     value: service.id.toString(),
     label: service.label,
   }));
+
+  const handleChange = (field, e) => {
+    let original = e.target.value;        // la valeur telle qu'elle a été saisie
+
+    // Remplace la virgule par un point pour parseFloat
+    let val = original.replace(',', '.');
+    let num = parseFloat(val);
+
+    if (isNaN(num) || num < 0) {
+      onUpdateField(id, field, '');
+      return;
+    }
+
+    // Arrondi à 2 décimales
+    num = Math.round(num * 100) / 100;
+
+    // Convertit en string avec 2 décimales et remet le séparateur original
+    const formatted = num.toString();
+
+    onUpdateField(id, field, formatted);
+  };
+
+  const handleChangeOccurrencePrice = (animalId, serviceId, occId, e) => {
+    let original = e.target.value;        // la valeur telle qu'elle a été saisie
+
+    // Remplace la virgule par un point pour parseFloat
+    let val = original.replace(',', '.');
+    let num = parseFloat(val);
+
+    if (isNaN(num) || num < 0) {
+      onUpdateOccurrencePrice(animalId, serviceId, occId, '');
+      return;
+    }
+
+    // Arrondi à 2 décimales
+    num = Math.round(num * 100) / 100;
+
+    // Convertit en string avec 2 décimales et remet le séparateur original
+    const formatted = num.toString();
+
+    onUpdateOccurrencePrice(animalId, serviceId, occId, formatted);
+  };
 
   return (
     <div className="border rounded-lg mb-4 overflow-visible">
@@ -85,7 +114,7 @@ export function AnimalTypeAccordion({
               e.stopPropagation();
               onRemove(id);
             }}
-            className="appearance-none bg-transparent hover:scale-110 border-none p-0 text-red-500 hover:text-red-600 hover:bg-transparent focus:outline-none"
+            className="supress-animal appearance-none bg-transparent hover:scale-110 border-none p-0 text-red-500 hover:text-red-600 hover:bg-transparent focus:outline-none"
             title="Supprimer ce type d'animal"
           >
             ❌
@@ -130,7 +159,7 @@ export function AnimalTypeAccordion({
                   onChange={(e) => onUpdateCareMode(id, mode, e.target.checked)}
                   className="form-checkbox h-5 w-5 text-green-600 transition duration-150 ease-in-out"
                 />
-                <label htmlFor={`${mode}-${id}`} className="labelForm">
+                <label htmlFor={`${mode}-${id}`} className="labelForm !mb-0">
                   {mode === 'home' ? 'Garde à domicile' : 'Garde chez le petsitter'}
                 </label>
               </div>
@@ -148,8 +177,10 @@ export function AnimalTypeAccordion({
                 type="number"
                 placeholder="Nombre animaux max"
                 value={animal.number_animals || ''}
-                onChange={(e) => onUpdateField(id, 'number_animals', e.target.value)}
+                onChange={(e) => onUpdateField(id, 'number_animals', parseInt(e.target.value, 10) || '')}
                 className="inputForm"
+                step="1"
+                min="1"
               />
             </div>
 
@@ -163,8 +194,9 @@ export function AnimalTypeAccordion({
                 step="0.01"
                 placeholder="Prix prestation"
                 value={animal.offer_price || ''}
-                onChange={(e) => onUpdateField(id, 'offer_price', e.target.value)}
+                onChange={(e) => handleChange('offer_price', e)}
                 className="inputForm"
+                min="0"
               />
             </div>
 
@@ -179,8 +211,9 @@ export function AnimalTypeAccordion({
                   step="0.01"
                   placeholder="Prix déplacement"
                   value={animal.travel_price || ''}
-                  onChange={(e) => onUpdateField(id, 'travel_price', e.target.value)}
+                  onChange={(e) => handleChange('travel_price', e)}
                   className="inputForm"
+                  min="0"
                 />
               </div>
             )}
@@ -194,7 +227,7 @@ export function AnimalTypeAccordion({
               <div key={service.id} className="p-3 bg-gray-50 rounded-lg mb-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="inline-block bg-green-100 text-green-800 text-md font-semibold px-3 py-1 rounded-full">{service.label}</span>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex flex-wrap justify-center gap-2 items-center">
                     <button
                       onClick={() => onApplyServiceToAllAnimals(service.id, id)}
                       className="group bg-transparent p-1 hover:scale-110 hover:bg-transparent transition-transform"
@@ -230,7 +263,7 @@ export function AnimalTypeAccordion({
                     const isChecked = selectedOcc?.checked || false;
 
                     return (
-                      <div key={occ.id} className="flex items-center gap-3 h-[50px] overflow-y-auto">
+                      <div key={occ.id} className="flex flex-wrap items-center gap-3 h-[100px] sm:h-[50px] overflow-y-auto">
                         <div className="flex items-center space-x-2">
                           <input
                             id={`occ-${animal.id}-${service.id}-${occ.id}`}
@@ -246,12 +279,15 @@ export function AnimalTypeAccordion({
 
                         {isChecked && (
                           <input
+                            id={`occ-price-${animal.id}-${service.id}-${occ.id}`}
                             type="number"
                             step="0.01"
                             value={selectedOcc?.price || ''}
                             placeholder="Prix additif €"
                             onChange={(e) => onUpdateOccurrencePrice(animal.id, service.id, occ.id, e.target.value)}
+                            // onChange={(e) => handleChangeOccurrencePrice(animal.id, service.id, occ.id, e)}
                             className="inputForm !w-44"
+                            min="0"
                           />
                         )}
                       </div>
@@ -269,7 +305,7 @@ export function AnimalTypeAccordion({
                   <select
                     value={selectedServiceIndex[id] || ''}
                     onChange={(e) => onSelectService(id, e.target.value)}
-                    className="inputForm"
+                    className="select-service inputForm"
                   >
                     <option value="">-- Sélectionner --</option>
                     {servicesOptions.map((option) => (

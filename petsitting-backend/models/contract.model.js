@@ -16,6 +16,12 @@ module.exports = (sequelize) => {
       type: DataTypes.FLOAT,
       allowNull: false,
       defaultValue: 0,
+      validate: {
+        min: {
+          args: [0],
+          msg: 'Le prix total doit être supérieur à 0',
+        },
+      },
     },
     estimate: {
       type: DataTypes.TEXT, // ou TEXT si tu préfères une chaîne

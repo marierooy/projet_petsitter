@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { fetchCsrfToken } from '../utils/csrf';
 
 function StarSelector({ rating, setRating }) {
   // rating : note actuelle (1 à 5)
@@ -32,7 +33,20 @@ export default function EvaluateForm({ contractId, onSuccess }) {
   const [rate, setRate] = useState(0);
   const [comment, setComment] = useState('');
 
-  const token = localStorage.getItem('token');
+  const [csrfToken, setCsrfToken] = useState(null);
+
+  // 🔑 Récupération CSRF token au montage
+  useEffect(() => {
+    const fetchCsrf = async () => {
+      try {
+        const token = await fetchCsrfToken();
+        setCsrfToken(token);
+      } catch (err) {
+        console.error("Erreur récupération CSRF token", err);
+      }
+    };
+    fetchCsrf();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +54,12 @@ export default function EvaluateForm({ contractId, onSuccess }) {
       await axios.post(
         `${process.env.REACT_APP_API_BASE}/api/evaluate`,
         { contractId, rate, comment },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          withCredentials: true, // 🔑 envoie le cookie JWT HttpOnly
+          headers: {
+            "X-CSRF-Token": csrfToken, // 🔑 protection CSRF
+          },
+        }
       );
       onSuccess();
     } catch (err) {

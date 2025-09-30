@@ -1,5 +1,12 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Charge le bon fichier env selon l'environnement
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: '.env.test' });
+} else {
+  dotenv.config();
+}
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,

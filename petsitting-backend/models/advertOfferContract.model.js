@@ -48,8 +48,8 @@ module.exports = (sequelize) => {
   });
 
   AdvertOfferContract.associate = models => {
-    AdvertOfferContract.belongsTo(models.Advert, { foreignKey: 'advert_id' });
-    AdvertOfferContract.belongsTo(models.Offer, { foreignKey: 'offer_id' });
+    AdvertOfferContract.belongsTo(models.Advert, { as: 'Advert', foreignKey: 'advert_id' });
+    AdvertOfferContract.belongsTo(models.Offer, { as: 'Offer', foreignKey: 'offer_id' });
     AdvertOfferContract.belongsTo(models.Contract, { foreignKey: 'contract_id' });
     AdvertOfferContract.belongsTo(models.User, { as: 'Petsitter', foreignKey: 'petsitter_id' });
     AdvertOfferContract.belongsTo(models.User, { as: 'Owner', foreignKey: 'owner_id' });

@@ -4,7 +4,13 @@ module.exports = (sequelize) => {
   const OfferServiceOccurence = sequelize.define('OfferServiceOccurence', {
     price: {
       type: DataTypes.FLOAT,
-      allowNull: false,
+      allowNull: true,
+      validate: {
+        min: {
+          args: [0],
+          msg: 'Le prix de service doit être supérieur ou égal à 0',
+        },
+      },
     },
     checked: {
       type: DataTypes.BOOLEAN,

@@ -53,6 +53,7 @@ const getMostRecentAdvertsByUser = async (userId) => {
       }));
 
       recentAdverts.push({
+        id: advert.id,
         animalId: advert.animalId,
         careMode: advert.careMode,
         startDate: advert.startDate,

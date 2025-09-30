@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -6,6 +6,11 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 const localizer = momentLocalizer(moment);
 
 const CalendarComponent = ({ availabilities, onSelectAvailability }) => {
+
+  // Calendar view states
+  const [currentView, setCurrentView] = useState('month');
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const events = availabilities.map(av => ({
     id: av.id,
     title: av.availabilityType?.label || 'Disponibilité',
@@ -22,6 +27,10 @@ const CalendarComponent = ({ availabilities, onSelectAvailability }) => {
         events={events}
         startAccessor="start"
         endAccessor="end"
+        view={currentView}
+        onView={(view) => setCurrentView(view)}
+        date={currentDate}
+        onNavigate={(date) => setCurrentDate(date)}
         style={{ height: 500 }}
         onSelectEvent={(event) => onSelectAvailability(event.resource)}
         eventPropGetter={(event) => ({
@@ -56,107 +65,116 @@ const CalendarComponent = ({ availabilities, onSelectAvailability }) => {
         className="rbc-calendar-custom"
       />
             {/* Custom styles for calendar */}
-      <style jsx>{`
-        /* Styles généraux pour tous les boutons (calendrier et autres) */
-        button {
-          background-color: #2563eb; /* bleu primaire */
-          color: white;
-          border: none;
-          border-radius: 8px;
-          padding: 8px 14px;
-          font-weight: 600;
-          font-family: 'Inter', sans-serif;
-          cursor: pointer;
-          transition: background-color 0.3s ease;
-        }
-        button:hover, button:focus {
-          background-color: #1d4ed8; /* bleu plus foncé */
-          outline: none;
-        }
-        button:disabled {
-          background-color: #a5b4fc;
-          cursor: not-allowed;
-          color: #e0e7ff;
-        }
+    <style jsx>{`
+      /* Styles généraux pour tous les boutons (calendrier et autres) */
+      button {
+        background-color: var(--color-pink);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:hover, button:focus {
+        background-color: var(--color-pink-dark); /* bleu plus foncé */
+        outline: none;
+      }
+      button:disabled {
+        background-color: var(--color-pink-dark);
+        cursor: not-allowed;
+        color: #e0e7ff;
+      }
 
-        /* Calendrier personnalisé */
-        .rbc-calendar-custom {
-          font-family: 'Inter', sans-serif;
-        }
+      /* Calendrier personnalisé */
+      .rbc-calendar-custom {
+        font-family: 'Inter', sans-serif;
+      }
 
-        /* Toolbar : conteneur */
-        .rbc-calendar-custom .rbc-toolbar {
-          margin-bottom: 24px;
+      /* Toolbar : conteneur */
+      .rbc-calendar-custom .rbc-toolbar {
+        margin-bottom: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* Boutons dans la toolbar */
+      .rbc-calendar-custom .rbc-toolbar button {
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-weight: 600;
+        font-family: inherit;
+        color: var(--color-pink);
+        background-color: transparent;
+        border: 2px solid var(--color-pink);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .rbc-calendar-custom .rbc-toolbar button:hover {
+        background-color: var(--color-pink);
+        color: white;
+      }
+
+      .rbc-calendar-custom .rbc-toolbar button.rbc-active {
+        background-color: var(--color-pink);
+        color: white;
+        border-color: var(--color-pink);
+      }
+
+      /* Titre du mois dans la toolbar (ex: "Août 2025") */
+      .rbc-calendar-custom .rbc-toolbar-label {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: var(--color-pink-dark);; /* bleu foncé */
+        text-transform: capitalize; /* première lettre majuscule */
+        user-select: none;
+      }
+
+      /* Événements */
+      .rbc-calendar-custom .rbc-event {
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 4px 8px;
+        color: #000000cc;
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+      }
+      .rbc-calendar-custom .rbc-event:hover {
+        opacity: 0.85;
+        cursor: pointer;
+      }
+
+      /* Grille jour/mois - lignes et colonnes */
+      .rbc-calendar-custom .rbc-day-bg {
+        border: 1px solid #e5e7eb;
+      }
+      .rbc-calendar-custom .rbc-header {
+        background-color: #f9fafb;
+        color: #374151;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border-bottom: 2px solid var(--color-pink);
+        text-transform: capitalize;
+      }
+
+      /* Désactiver la time gutter (pas d’heure) */
+      .rbc-calendar-custom .rbc-time-gutter {
+        display: none;
+      }
+      @media (max-width: 768px) {
+        .rbc-calendar-custom .rbc-btn-group {
           display: flex;
           flex-wrap: wrap;
-          justify-content: space-between;
-          align-items: center;
         }
-
-        /* Boutons dans la toolbar */
-        .rbc-calendar-custom .rbc-toolbar button {
-          border-radius: 8px;
-          padding: 8px 14px;
-          font-weight: 600;
-          font-family: inherit;
-          color: #2563eb;
-          background-color: transparent;
-          border: 2px solid #2563eb;
-          transition: background-color 0.3s ease, color 0.3s ease;
+        .rbc-calendar-custom {
+          height: 620px !important;
         }
-
-        .rbc-calendar-custom .rbc-toolbar button:hover {
-          background-color: #2563eb;
-          color: white;
-        }
-
-        .rbc-calendar-custom .rbc-toolbar button.rbc-active {
-          background-color: #2563eb;
-          color: white;
-          border-color: #2563eb;
-        }
-
-        /* Titre du mois dans la toolbar (ex: "Août 2025") */
-        .rbc-calendar-custom .rbc-toolbar-label {
-          font-weight: 700;
-          font-size: 1.25rem;
-          color: #1e40af; /* bleu foncé */
-          text-transform: capitalize; /* première lettre majuscule */
-          user-select: none;
-        }
-
-        /* Événements */
-        .rbc-calendar-custom .rbc-event {
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 14px;
-          padding: 4px 8px;
-          color: #000000cc;
-          box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-        }
-        .rbc-calendar-custom .rbc-event:hover {
-          opacity: 0.85;
-          cursor: pointer;
-        }
-
-        /* Grille jour/mois - lignes et colonnes */
-        .rbc-calendar-custom .rbc-day-bg {
-          border: 1px solid #e5e7eb;
-        }
-        .rbc-calendar-custom .rbc-header {
-          background-color: #f9fafb;
-          color: #374151;
-          font-weight: 700;
-          font-size: 0.9rem;
-          border-bottom: 2px solid #2563eb;
-          text-transform: capitalize;
-        }
-
-        /* Désactiver la time gutter (pas d’heure) */
-        .rbc-calendar-custom .rbc-time-gutter {
-          display: none;
-        }
-      `}</style>
+      }
+    `}</style>
     </div>
   );
 };

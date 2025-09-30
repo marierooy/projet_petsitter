@@ -13,6 +13,41 @@ const create = async (data) => {
 };
 
 const updateOfferServicesAndOccurrences = async (offerId, services) => {
+  const errors = [];
+  // 🔎 Récupération de l’offre et de son animalType associé
+  const offer = await Offer.findByPk(offerId, {
+    include: [{ model: AnimalType, as: 'animalType' }]
+  });
+
+  if (!offer) {
+    errors.push(`Offer ${offerId} introuvable`);
+  }
+
+  const animalType = offer.animalType;
+  if (!animalType) {
+    errors.push(`Aucun animalType associé à l’offre ${offerId}`);
+  }
+
+  // Vérifie qu'il y a au moins un service
+  if (!services || services.length === 0) {
+    errors.push(`L’offre associée au type d'animal "${animalType.name}" doit avoir au moins un service associé`);
+  }
+
+  // Vérifie qu'au moins une occurrence est cochée pour chaque service
+  for (const service of services) {
+    const occurences = service.occurences || [];
+    const hasChecked = occurences.some(occ => occ.checked);
+    if (!hasChecked) {
+      const serviceOrigin = await Service.findByPk(service.id, { attributes: ["label"] });
+      const serviceLabel = serviceOrigin ? serviceOrigin.label : `#${service.id}`;
+      errors.push(`Le service "${serviceLabel}" associé au type d'animal "${animalType.name}" doit avoir au moins une occurrence cochée`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(errors.join(" | ")); // ou JSON.stringify(errors) si tu veux un tableau côté front
+  }
+
   await OfferServiceOccurence.destroy({ where: { offerId } });
 
   for (const service of services) {
@@ -29,6 +64,46 @@ const updateOfferServicesAndOccurrences = async (offerId, services) => {
 };
 
 const updateRawOfferServicesAndOccurrences = async (offerId, offerServiceOccurences) => {
+  const errors = [];
+  // 🔎 Récupération de l’offre et de son animalType associé
+  const offer = await Offer.findByPk(offerId, {
+    include: [{ model: AnimalType, as: 'animalType' }]
+  });
+
+  if (!offer) {
+    errors.push(`Offer ${offerId} introuvable`);
+  }
+
+  const animalType = offer.animalType;
+  if (!animalType) {
+    errors.push(`Aucun animalType associé à l’offre ${offerId}`);
+  }
+
+    // Vérifie qu'il y a au moins un service
+  if (!offerServiceOccurences || offerServiceOccurences.length === 0) {
+    errors.push(`L’offre associée au type d'animal "${animalType.name}" doit avoir au moins un service associé`);
+  }
+
+  // Vérifie qu'au moins une occurrence est cochée pour chaque service
+  const servicesGrouped = offerServiceOccurences.reduce((acc, occ) => {
+    if (!acc[occ.serviceId]) acc[occ.serviceId] = [];
+    acc[occ.serviceId].push(occ);
+    return acc;
+  }, {});
+
+  for (const serviceId of Object.keys(servicesGrouped)) {
+    const hasChecked = servicesGrouped[serviceId].some(occ => occ.checked);
+    if (!hasChecked) {
+      const service = await Service.findByPk(serviceId, { attributes: ["label"] });
+      const serviceLabel = service ? service.label : `#${serviceId}`;
+      errors.push(`Le service "${serviceLabel}" associé au type d'animal "${animalType.name}" doit avoir au moins une occurrence cochée`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(errors.join(" | ")); // ou JSON.stringify(errors) si tu veux un tableau côté front
+  }
+
   await OfferServiceOccurence.destroy({ where: { offerId } });
 
   for (const offerServiceOccurence of offerServiceOccurences) {
@@ -55,7 +130,7 @@ async function findOffersByUserAvailabilityAndAnimalType(petsitterId, availabili
           { model: Service, as: 'service' },
           {
             model: Occurence,
-            as: 'occurence',   // Attention à l'alias défini dans ton association Sequelize
+            as: 'occurence',  
           }
         ],
       },
@@ -68,7 +143,7 @@ async function findOffersByUserAvailabilityAndAnimalType(petsitterId, availabili
     ],
   });
   if (offer) {
-    // 💡 Offres trouvées : tu peux faire une action ici
+    // Offres trouvées
     return offer;
   }
 

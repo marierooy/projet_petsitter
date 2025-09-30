@@ -1,4 +1,4 @@
-const { CareMode, OfferServiceOccurence, AvailabilityType, Availability } = require('../models');
+const { CareMode, AnimalType, OfferServiceOccurence, AvailabilityType, Availability } = require('../models');
 const offerRepository = require('../repositories/offer.repository');
 const animalTypeRepository = require('../repositories/animalType.repository');
 const animalTypeServiceRepository = require('../repositories/animalTypeService.repository');
@@ -7,38 +7,27 @@ const availabilityRepository = require('../repositories/availability.repository'
 const updateOffer = async (animalId, petsitterId, data) => {
   const {
     number_animals = 0,
-    offer_price = 0,
-    travel_price = 0,
+    offer_price,
+    travel_price,
     availabilityId,
     careModes = {},
     services = [],
     offerServiceOccurences = [],
   } = data?.dataValues ?? data;
 
-  // console.log( 'data', data)
-  // console.log( 'param', animalId,  number_animals,
-  //   offer_price,
-  //   travel_price,
-  //   availabilityId, careModes, services)
-
-  // 1. Trouver ou créer l'offre
-  let offer = await offerRepository.findByAnimalPetsitterAndAvailability(animalId, petsitterId, availabilityId);
-
-  const availabilityLabel = await availabilityRepository.getAvailabilityTypeByAvailabilityId(availabilityId);
-
-  if (!offer || availabilityLabel === 'Petsitting') {
-    offer = await offerRepository.create({
-      animalTypeId: animalId,
-      petsitterId,
-      number_animals,
-      offer_price,
-      travel_price,
-      availabilityId
-    });
-  } else {
-    await offer.update({ number_animals, offer_price, travel_price });
+  const animalType = await AnimalType.findByPk(animalId);
+  if (!animalType) {
+    throw new Error(`Type d'animal #${animalId} introuvable`);
   }
 
+  const errors = [];
+
+  // Vérif prix de l'offre
+  if (offer_price === undefined || offer_price === null || offer_price === '' || offer_price === 0) {
+    errors.push(`Le prix de la prestation pour "${animalType.name}" est obligatoire`);
+  }
+
+  // Extraction labels careModes
   let modeLabels = [];
   if (data.dataValues) {
     modeLabels = careModes.map(mode => mode.dataValues.label);
@@ -48,22 +37,59 @@ const updateOffer = async (animalId, petsitterId, data) => {
       .map(([label]) => label);
   }
 
-  const modes = await CareMode.findAll({
-    where: {
-      label: modeLabels
-    }
-  });
+  // 1. Trouver ou créer l'offre
+  let offer = await offerRepository.findByAnimalPetsitterAndAvailability(
+    animalId,
+    petsitterId,
+    availabilityId
+  );
 
-  await offer.setCareModes(modes); // Remplace les anciens
+  const availabilityLabel = await availabilityRepository.getAvailabilityTypeByAvailabilityId(
+    availabilityId
+  );
 
-  // 3. Mettre à jour les services et occurrences
-  if(!services || services.length === 0) {
-    await offerRepository.updateRawOfferServicesAndOccurrences(offer.id, offerServiceOccurences);
+  if (!offer || availabilityLabel === "Petsitting") {
+    offer = await offerRepository.create({
+      animalTypeId: animalId,
+      petsitterId,
+      number_animals,
+      offer_price,
+      travel_price,
+      availabilityId,
+    });
   } else {
-    await offerRepository.updateOfferServicesAndOccurrences(offer.id, services);
+    await offer.update({ number_animals, offer_price, travel_price });
   }
 
-  return offer
+  // 2. Associer les modes de garde
+  const modes = await CareMode.findAll({
+    where: { label: modeLabels },
+  });
+  await offer.setCareModes(modes);
+
+  // 3. Mettre à jour les services et occurrences
+  if (!services || services.length === 0) {
+    try {await offerRepository.updateRawOfferServicesAndOccurrences(
+      offer.id,
+      offerServiceOccurences
+    )} catch (err) { 
+      errors.push(err.message);
+    }
+  } else {
+    try {await offerRepository.updateOfferServicesAndOccurrences(
+      offer.id,
+      services
+    )} catch (err) { 
+      errors.push(err.message);
+    }
+  }
+
+  if (errors.length > 0) {
+    const err = new Error(errors.join(" | "));
+    throw err;
+  }
+
+  return offer;
 };
 
 async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
@@ -99,7 +125,7 @@ async function getOffersByUserAndAvailability(petsitterId, availabilityId) {
 
       const groupedServices = [];
 
-      const rawOffer = offer && !Array.isArray(offer) ? offer.get({ plain: true }): null;
+      const rawOffer = offer && typeof offer.get === "function" ? offer.get({ plain: true }) : null;
 
       let careModes = [];
 

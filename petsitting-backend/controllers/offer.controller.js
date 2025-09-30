@@ -15,20 +15,39 @@ const updateOfferByAnimalId = async (req, res) => {
 };
 
 const updateMultipleOffers = async (req, res) => {
-  try {
-    const petsitterId = req.user.id; // dépend de authMiddleware
-    const offers = req.body;
+  const petsitterId = req.user.id; // dépend de authMiddleware
+  const offers = req.body;
 
-    for (const offerData of offers) {
-      const { animalTypeId, ...data } = offerData;
+  const errors = []; // tableau global pour accumuler les erreurs
+
+  for (const offerData of offers) {
+    const { animalTypeId, ...data } = offerData;
+
+    try {
       await offerService.updateOffer(animalTypeId, petsitterId, data);
-    }
+    } catch (err) {
+      console.error(`Erreur pour animalTypeId=${animalTypeId}:`, err);
 
-    res.status(200).json({ message: 'Toutes les offres ont été enregistrées.' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erreur lors de l\'enregistrement des offres.' });
+      // Si updateOffer a lancé un tableau d’erreurs (err.details)
+      if (err.details && Array.isArray(err.details)) {
+        errors.push(
+          err.details
+        );
+      } else {
+        errors.push(err.message || "Erreur inconnue"
+        );
+      }
+    }
   }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      message: errors,
+      errors
+    });
+  }
+
+  res.status(200).json({ message: 'Toutes les offres ont été enregistrées.' });
 };
 
 async function getOffers(req, res) {

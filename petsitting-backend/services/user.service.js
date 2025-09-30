@@ -9,6 +9,14 @@ const register = async (userData) => {
   const existing = await userRepo.findByEmail(userData.email);
   if (existing) throw new Error('Email déjà utilisé');
 
+  if (!/\S+@\S+\.\S+/.test(userData.email)) {
+    throw new Error('Email invalide');
+  }
+
+  if (userData.password.length < 8) {
+    throw new Error('Mot de passe invalide');
+  }
+
   // Hasher le mot de passe
   const hashedPassword = await bcrypt.hash(userData.password, 10);
   userData.password = hashedPassword;

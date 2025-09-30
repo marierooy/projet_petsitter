@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { fetchCsrfToken } from '../utils/csrf';
 
-function AddEditAnimalForm({ token, initialData, onSuccess, onClose }) {
+function AddEditAnimalForm({ initialData, onSuccess, onClose }) {
   const [animalTypes, setAnimalTypes] = useState([]);
+  const [csrfToken, setCsrfToken] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     gender: '',
@@ -11,14 +13,31 @@ function AddEditAnimalForm({ token, initialData, onSuccess, onClose }) {
     animalTypeId: ''
   });
 
+  // Charger le CSRF token
   useEffect(() => {
-    axios.get(process.env.REACT_APP_API_BASE + '/api/animal-type', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => setAnimalTypes(res.data))
-      .catch(err => console.error('Erreur chargement types :', err));
+    const getToken = async () => {
+      try {
+        const token = await fetchCsrfToken();
+        setCsrfToken(token);
+      } catch (err) {
+        console.error('Erreur chargement CSRF:', err);
+      }
+    };
+    getToken();
   }, []);
 
+  // Charger les types d'animaux une fois le CSRF chargé
+  useEffect(() => {
+    if (!csrfToken) return;
+    axios.get(`${process.env.REACT_APP_API_BASE}/api/animal-type`, {
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrfToken }
+    })
+    .then(res => setAnimalTypes(res.data))
+    .catch(err => console.error('Erreur chargement types :', err));
+  }, [csrfToken]);
+
+  // Initialiser le formulaire si édition
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -32,22 +51,26 @@ function AddEditAnimalForm({ token, initialData, onSuccess, onClose }) {
   }, [initialData]);
 
   const handleChange = e => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!csrfToken) {
+      alert('CSRF token non chargé, réessayez.');
+      return;
+    }
     try {
       if (initialData) {
         await axios.put(`${process.env.REACT_APP_API_BASE}/api/animal/${initialData.id}/edit`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken }
         });
       } else {
         await axios.post(`${process.env.REACT_APP_API_BASE}/api/animal/add`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken }
         });
       }
       onSuccess();
@@ -58,7 +81,7 @@ function AddEditAnimalForm({ token, initialData, onSuccess, onClose }) {
   };
 
   return (
-    <div>
+    <div className='modal'>
       <header>
         <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">
           {initialData ? "Modifier" : "Ajouter"} un animal

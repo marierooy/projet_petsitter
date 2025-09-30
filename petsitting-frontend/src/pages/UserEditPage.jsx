@@ -1,90 +1,120 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
+import { fetchCsrfToken } from '../utils/csrf';
 
 export default function UserProfileEdit() {
     const [user, setUser] = useState(null);
     const [previewPhoto, setPreviewPhoto] = useState(null);
-    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        formState: { errors },
+    } = useForm();
 
-    const isPetsitter = watch('roles')?.includes('petsitter');
-    const hasGarden = watch('garden');
+    const isPetsitter = watch("roles")?.includes("petsitter");
+    const hasGarden = watch("garden");
 
     useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API_BASE}/api/user/me`, {
-        headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        const loadUser = async () => {
+        try {
+            const csrfToken = await fetchCsrfToken();
+            const res = await axios.get(
+            `${process.env.REACT_APP_API_BASE}/api/user/me`,
+            {
+                withCredentials: true,
+                headers: {
+                "X-CSRF-Token": csrfToken,
+                },
+            }
+            );
+            const userData = res.data;
+            setUser(userData);
+
+            // Champs standards
+            setValue("first_name", userData.first_name || "");
+            setValue("last_name", userData.last_name || "");
+            setValue("email", userData.email || "");
+            setValue("phone", userData.phone || "");
+            setValue("address", userData.address || "");
+            setValue("postal_code", userData.postal_code || "");
+            setValue("city", userData.city || "");
+            setValue("country", userData.country || "");
+            setValue("presentation", userData.presentation || "");
+
+            // Rôles
+            setValue("roles", userData.Roles?.map((r) => r.name) || []);
+
+            // Champs petsitter
+            setValue("habitation", userData.habitation || "");
+            setValue("habitation_size", userData.habitation_size || "");
+            setValue("number_rooms", userData.number_rooms || "");
+            setValue("number_children", userData.number_children);
+            setValue("garden", !!userData.garden);
+            setValue("terrace", !!userData.terrace);
+            setValue("balcony", !!userData.balcony);
+            setValue("yard", !!userData.yard);
+            setValue("garden_size", userData.garden_size || "");
+        } catch (err) {
+            console.error("Erreur chargement profil", err);
         }
-    }).then(res => {
-        const userData = res.data;
-        setUser(userData);
+        };
 
-        // Champs standards
-        setValue('first_name', userData.first_name || '');
-        setValue('last_name', userData.last_name || '');
-        setValue('email', userData.email || '');
-        setValue('phone', userData.phone || '');
-        setValue('address', userData.address || '');
-        setValue('postal_code', userData.postal_code || '');
-        setValue('city', userData.city || '');
-        setValue('country', userData.country || '');
-        setValue('presentation', userData.presentation || '');
-
-        // Rôles
-        setValue('roles', userData.Roles?.map(r => r.name) || []);
-
-        // Champs petsitter
-        setValue('habitation', userData.habitation || '');
-        setValue('habitation_size', userData.habitation_size || '');
-        setValue('number_rooms', userData.number_rooms || '');
-        setValue('number_children', userData.number_children);
-        setValue('garden', !!userData.garden);
-        setValue('terrace', !!userData.terrace);
-        setValue('balcony', !!userData.balcony);
-        setValue('yard', !!userData.yard);
-        setValue('garden_size', userData.garden_size || '');
-    }).catch(err => {
-        console.error('Erreur chargement profil', err);
-    });
+        loadUser();
     }, [setValue]);
 
-    const onSubmit = (data) => {
-    const formData = new FormData();
+    const onSubmit = async (data) => {
+        try {
+        const csrfToken = await fetchCsrfToken();
+        const formData = new FormData();
 
-    // Liste des champs numériques à valider
-    const numericFields = ['habitation_size', 'number_rooms', 'number_children', 'garden_size'];
+        // Champs numériques
+        const numericFields = [
+            "habitation_size",
+            "number_rooms",
+            "number_children",
+            "garden_size",
+        ];
 
-    Object.entries(data).forEach(([key, value]) => {
-        if (key === 'photo' && value instanceof FileList) {
-        formData.append('photo', value[0]);
-        } else {
-        let val = value;
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === "photo" && value instanceof FileList) {
+                formData.append("photo", value[0]);
+            } else {
+            let val = value;
 
-        // Convertir en float si le champ est numérique
-        if (numericFields.includes(key)) {
-            const parsed = parseFloat(value);
-            val = isNaN(parsed) ? null : parsed;
+            // Convertir en float si nécessaire
+            if (numericFields.includes(key)) {
+                const parsed = parseFloat(value);
+                val = isNaN(parsed) ? null : parsed;
+            }
+
+            // Sérialiser les tableaux (roles par ex.)
+            if (Array.isArray(val)) {
+                formData.append(key, JSON.stringify(val));
+            } else {
+                formData.append(key, val);
+            }
+            }
+        });
+
+        await axios.put(
+            `${process.env.REACT_APP_API_BASE}/api/user/me`,
+            formData,
+            {
+            withCredentials: true,
+            headers: {
+                "X-CSRF-Token": csrfToken,
+                "Content-Type": "multipart/form-data",
+            },
+            }
+        );
+
+        alert("Profil mis à jour !");
+        } catch (err) {
+        console.error("Erreur maj profil", err);
         }
-
-        // Sérialiser les tableaux (comme roles), sinon envoyer brut
-        if (Array.isArray(val)) {
-            formData.append(key, JSON.stringify(val));
-        } else {
-            formData.append(key, val);
-        }
-        }
-    });
-
-    axios.put(`${process.env.REACT_APP_API_BASE}/api/user/me`, formData, {
-        headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'multipart/form-data'
-        }
-    }).then(res => {
-        alert('Profil mis à jour !');
-    }).catch(err => {
-        console.error('Erreur maj profil', err);
-    });
     };
 
     if (!user) return <div className="h-screen flex items-center justify-center">Chargement...</div>;
@@ -234,6 +264,7 @@ export default function UserProfileEdit() {
                                 className="inputForm"
                                 type="number"
                                 step="1"
+                                min="0"
                                 placeholder="Taille (m²)"
                                 {...register('habitation_size')}
                             />
@@ -244,6 +275,8 @@ export default function UserProfileEdit() {
                                 className="inputForm"
                                 type="number"
                                 placeholder="Nombre de pièces"
+                                step="1"
+                                min="1"
                                 {...register('number_rooms')}
                             />
                         </div>
@@ -254,6 +287,8 @@ export default function UserProfileEdit() {
                                 type="number"
                                 placeholder="Nombre d'enfants"
                                 {...register('number_children')}
+                                step="1"
+                                min="0"
                             />
                         </div>
                         </div>
@@ -291,9 +326,10 @@ export default function UserProfileEdit() {
                             <input
                                 className="inputForm"
                                 type="number"
-                                step="1"
                                 placeholder="Taille du jardin (m²)"
                                 {...register('garden_size')}
+                                step="1"
+                                min="0"
                             />
                         </div>
                         )}

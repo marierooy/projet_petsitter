@@ -23,12 +23,12 @@ export function AnimalAccordion({
           const selectedOccurrence = selectedServiceIndex[serviceId];
 
           return (
-            <li key={serviceId} className="flex items-center justify-between">
-              <div className="flex-[5]">
+            <li key={serviceId} className="flex flex-wrap items-center justify-between">
+              <div className="sm:flex-[5]">
                 <div className="inline-block bg-green-100 text-green-800 text-md font-semibold px-3 py-1 rounded-full">{service?.label}</div>
               </div>
 
-              <div className="flex items-center space-x-2 flex-[5]">
+              <div className="flex items-center space-x-2 sm:flex-[5]">
                 <select
                   value={selectedOccurrence ? selectedOccurrence.toString() : ''}
                   onChange={(e) =>
@@ -59,11 +59,11 @@ export function AnimalAccordion({
       </ul>
 
       {availableServices.length > 0 && (
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center space-x-2">
           <select
             value={serviceToAdd}
             onChange={(e) => setServiceToAdd(e.target.value)}
-            className="inputForm flex-[7]"
+            className="inputForm sm:flex-[7]"
           >
             <option value="">Sélectionner un service</option>
             {availableServices.map(service => (
@@ -76,7 +76,7 @@ export function AnimalAccordion({
           <button
             type="button"
             disabled={!serviceToAdd}
-            className={`px-4 py-2 flex-[3] rounded text-white ${
+            className={`px-4 py-2 sm:flex-[3] rounded text-white ${
               serviceToAdd ? 'btn-blue' : 'btn-gray !bg-gray-300 cursor-not-allowed'
             }`}
             onClick={() => {

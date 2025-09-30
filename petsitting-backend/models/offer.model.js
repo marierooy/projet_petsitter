@@ -12,9 +12,23 @@ module.exports = (sequelize) => {
     },
     offer_price: {
       type: DataTypes.FLOAT,
+      allowNull: false,
+      validate: {
+        min: {
+          args: [0.01],
+          msg: 'Le prix de l’offre doit être supérieur à 0',
+        },
+      },
     },
     travel_price: {
       type: DataTypes.FLOAT,
+      allowNull: true,
+      validate: {
+        min: {
+          args: [0],
+          msg: 'Le prix de déplacement doit être supérieur ou égal à 0',
+        },
+      },
     }
   });
 

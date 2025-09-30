@@ -1,46 +1,53 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { fetchCsrfToken } from '../utils/csrf';
 
 function ServiceOccurencePage() {
   const [services, setServices] = useState([]);
   const [occurences, setOccurences] = useState([]);
   const [expandedServiceId, setExpandedServiceId] = useState(null);
   const [selectedOccurences, setSelectedOccurences] = useState({});
-  const token = localStorage.getItem('token');
+  const [csrfToken, setCsrfToken] = useState("");
 
   useEffect(() => {
-    fetchServices();
-    fetchOccurences();
+    const init = async () => {
+      const token = await fetchCsrfToken();
+      setCsrfToken(token);
+      await fetchServices(token);
+      await fetchOccurences(token);
+    };
+    init();
   }, []);
 
-  const fetchServices = async () => {
+  const fetchServices = async (csrf) => {
     const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/service`, {
-      headers: { Authorization: `Bearer ${token}` }
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrf }
     });
+
     const servicesData = res.data;
     setServices(servicesData);
 
     const initialSelected = {};
     for (const service of servicesData) {
       const resOcc = await axios.get(`${process.env.REACT_APP_API_BASE}/api/service/${service.id}/occurences`, {
-        headers: { Authorization: `Bearer ${token}` }
+        withCredentials: true,
+        headers: { "X-CSRF-Token": csrf }
       });
       initialSelected[service.id] = {};
       if (Array.isArray(resOcc.data)) {
         resOcc.data.forEach(o => {
           initialSelected[service.id][o.id] = true;
         });
-      } else {
-        console.error('Données inattendues pour resOcc.data:', resOcc.data, service.id);
       }
     }
-
     setSelectedOccurences(initialSelected);
   };
 
-  const fetchOccurences = async () => {
+  const fetchOccurences = async (csrf) => {
     const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/occurence`, {
-      headers: { Authorization: `Bearer ${token}` }
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrf }
     });
     setOccurences(res.data);
   };
@@ -67,7 +74,10 @@ function ServiceOccurencePage() {
       await axios.put(
         `${process.env.REACT_APP_API_BASE}/api/service/${serviceId}/occurences`,
         { occurenceIds },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken }
+        }
       );
       alert('Enregistré avec succès');
     } catch (error) {

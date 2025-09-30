@@ -7,25 +7,52 @@ module.exports = (sequelize) => {
       primaryKey: true,
       autoIncrement: true
     },
-    startDate: DataTypes.DATEONLY,
-    endDate: DataTypes.DATEONLY
+    startDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false // ✅ obligatoire
+    },
+    endDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false // ✅ obligatoire
+    }
+  });
+
+    // ✅ Vérification startDate < endDate
+  Advert.beforeValidate((advert) => {
+    if (
+      advert.startDate &&
+      advert.endDate &&
+      new Date(advert.startDate) > new Date(advert.endDate)
+    ) {
+      throw new Error('La date de début doit être antérieure ou égale à la date de fin');
+    }
   });
 
   Advert.associate = (models) => {
     Advert.belongsTo(models.User, {
-      foreignKey: 'userId',
+      foreignKey: {
+        name: 'userId',
+        allowNull: false, // un Advert doit être lié à un User
+      },
       as: 'owner'
     });
 
     Advert.belongsTo(models.Animal, {
-      foreignKey: 'animalId',
+      foreignKey: {
+        name: 'animalId',
+        allowNull: false, // animalId obligatoire
+      },
       as: 'animal'
     });
 
     Advert.belongsTo(models.CareMode, {
-      foreignKey: 'careModeId',
+      foreignKey: {
+        name: 'careModeId',
+        allowNull: false, // careModeId obligatoire
+      },
       as: 'careMode'
     });
+
 
     Advert.hasMany(models.AdvertServiceOccurence, {
         foreignKey: 'advertId',

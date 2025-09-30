@@ -1,10 +1,10 @@
 const request = require('supertest');
 const app = require('../app');
-const sequelize = require('../config/db.config');
+const { sequelize } = require('../models');
 
 const net = require('net');
 
-async function waitForPort(port, host = '127.0.0.1', timeout = 10000) {
+async function waitForPort(port, host = 'localhost', timeout = 10000) {
     const start = Date.now();
     return new Promise((resolve, reject) => {
         const tryConnect = () => {
@@ -44,7 +44,7 @@ async function waitForPort(port, host = '127.0.0.1', timeout = 10000) {
 describe('Auth routes', () => {
 
     beforeAll(async () => {       
-        await waitForPort(3307);
+        await waitForPort(3306);
         await sequelize.authenticate();
         await sequelize.sync({ force: true });
     });
@@ -56,7 +56,7 @@ describe('Auth routes', () => {
     test('POST /api/auth/register - échoue si champs obligatoires manquants', async () => {
         const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: 'test@example.com', password: 'motdepasse123' }); // Manque role, first_name, nom
+        .send({ email: 'test@example.com', password: 'Motdepasse123' }); // Manque role, first_name, nom
 
         expect(res.statusCode).toBe(400);
         expect(res.body).toHaveProperty('errors');
@@ -68,11 +68,11 @@ describe('Auth routes', () => {
         const res = await request(app)
         .post('/api/auth/register')
         .send({
-            role: 'petsitter',
+            roles: ['petsitter'],
             first_name: 'Marie',
             last_name: 'Rooy',
             email: 'marie@example.com',
-            password: 'motdepasse123'
+            password: 'Motdepasse-123'
         });
 
         expect(res.statusCode).toBe(201);
@@ -84,11 +84,11 @@ describe('Auth routes', () => {
         await request(app)
         .post('/api/auth/register')
         .send({
-            role: 'petsitter',
+            roles: ['petsitter'],
             first_name: 'Alice',
             last_name: 'Dupont',
             email: 'alice@example.com',
-            password: 'motdepasse456'
+            password: 'Motdepasse-456'
         });
     
         // Ensuite : on teste le login avec les bons identifiants
@@ -96,7 +96,7 @@ describe('Auth routes', () => {
         .post('/api/auth/login')
         .send({
             email: 'alice@example.com',
-            password: 'motdepasse456'
+            password: 'Motdepasse-456'
         });
     
         expect(res.statusCode).toBe(200);

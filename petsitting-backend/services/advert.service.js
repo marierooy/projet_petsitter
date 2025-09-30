@@ -1,6 +1,18 @@
 const advertRepo = require('../repositories/advert.repository');
 
 const createAdvert = async ({ startDate, endDate, userId, animalId, careModeId, services }) => {
+  // Vérifier qu'il y a au moins un service/occurrence
+  if (!services || services.length === 0) {
+    throw new Error("Un advert doit avoir au moins un couple service/occurrence associé à l'animal");
+  }
+
+  // Vérifier que chaque service a bien un occurenceId
+  for (const { serviceId, occurrenceId } of services) {
+    if (!serviceId || !occurrenceId) {
+      throw new Error("Chaque service doit être associé à une occurrence valide");
+    }
+  }
+
   // Crée l'annonce
   const advert = await advertRepo.createAdvert({
     startDate,

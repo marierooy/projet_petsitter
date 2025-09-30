@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { fetchCsrfToken } from '../utils/csrf';
 
 const API_BASE = process.env.REACT_APP_API_BASE + '/api/auth' || '/api/auth';
 
@@ -41,10 +42,16 @@ function AuthForm() {
     setError(null);
 
     try {
+      const CSRF_TOKEN = await fetchCsrfToken();
       const url = isRegister ? `${API_BASE}/register` : `${API_BASE}/login`;
+      console.log(formData);
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF_TOKEN
+        },
+        credentials: 'include',
         body: JSON.stringify(formData)
       });
       const data = await res.json();
@@ -57,10 +64,10 @@ function AuthForm() {
         }
       } else {
         setMessage(data.message + ' ' + JSON.stringify(data.user) || 'Succès !');
-        if (data.token) {
-          login(data.token);
-          navigate('/');
-        }
+        await login({
+          email: formData.email,
+          password: formData.password
+        });
         setFormData({
           roles: [],
           first_name: '',
@@ -68,6 +75,7 @@ function AuthForm() {
           email: '',
           password: '',
         });
+        navigate('/');
       }
     } catch (err) {
       setError('Erreur réseau');
@@ -76,7 +84,9 @@ function AuthForm() {
 
   return (
     <div className="card" style={{ maxWidth: 400, margin: 'auto', marginTop: '2rem' }}>
-      <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">{isRegister ? 'Créer un compte' : 'Se connecter'}</h2>
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-[var(--color-green)] mb-3 pb-2 inline-block">{isRegister ? 'Créer un compte' : 'Se connecter'}</h2>
+      </div>
       <form onSubmit={handleSubmit} className="gap-1">
         {isRegister && (
           <>
@@ -158,7 +168,7 @@ function AuthForm() {
         </button>
       </form>
 
-      {message && <div className="alert-success">{message}</div>}
+      {/* {message && <div className="alert-success">{message}</div>} */}
       {Array.isArray(error) ? (
         <div className="alert-error">
           <ul>

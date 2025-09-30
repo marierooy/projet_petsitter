@@ -24,9 +24,9 @@ const Navbar = () => {
           <li><Link to="/chercher-petsitting" className="nav-link">Chercher un petsitting</Link></li>
         )}
 
-        {/* {user?.roles?.includes('owner') && (
+        {user?.roles?.includes('owner') && (
           <li><Link to="/mes-annonces" className="nav-link">Mes annonces</Link></li>
-        )} */}
+        )}
 
         {user ? (
           <>

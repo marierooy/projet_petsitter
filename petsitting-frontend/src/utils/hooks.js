@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { parseISO } from 'date-fns';
+import { fetchCsrfToken } from './csrf';
+import axios from 'axios';
 
 // Custom hook for managing availability data
 export function useAvailabilities() {
@@ -7,26 +9,20 @@ export function useAvailabilities() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get token from localStorage (as in original code)
-  const getToken = () => localStorage.getItem('token');
-
   const fetchAvailabilities = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const token = getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const response = await axios.get(`${process.env.REACT_APP_API_BASE}/api/availability`, {
+        withCredentials: true, // équivalent de credentials: 'include'
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF_TOKEN
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = response.data;
       const formatted = data.map(av => ({
         id: av.id,
         title: av.availabilityType?.label || 'Disponible',
@@ -49,19 +45,18 @@ export function useAvailabilities() {
 
   const createAvailability = async (formData) => {
     try {
-      const token = getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability/add`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_BASE}/api/availability/add`,
+        formData, // axios se charge de JSON.stringify
+        {
+          withCredentials: true, // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
 
       await fetchAvailabilities();
       return true;
@@ -74,19 +69,18 @@ export function useAvailabilities() {
 
   const updateAvailability = async (id, formData) => {
     try {
-      const token = getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_BASE}/api/availability/${id}`,
+        formData, // Axios s'occupe de JSON.stringify
+        {
+          withCredentials: true, // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
 
       await fetchAvailabilities();
       return true;
@@ -99,18 +93,17 @@ export function useAvailabilities() {
 
   const deleteAvailability = async (id) => {
     try {
-      const token = getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability/${id}`, {
-        method: 'DELETE',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const response = await axios.delete(
+        `${process.env.REACT_APP_API_BASE}/api/availability/${id}`,
+        {
+          withCredentials: true, // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
 
       await fetchAvailabilities();
       return true;
@@ -144,7 +137,9 @@ export function useAnimalTypes(availabilityId) {
   const [error, setError] = useState(null);
   const [selectedOccurrences, setSelectedOccurrences] = useState({});
 
-  const getToken = () => localStorage.getItem('token');
+  function getErrorMessage(err) {
+    return err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Erreur inconnue';
+  }
 
   const fetchAnimalTypes = async () => {
     if (!availabilityId) return;
@@ -152,22 +147,21 @@ export function useAnimalTypes(availabilityId) {
     setIsLoading(true);
     setError(null);
     try {
-      const token = getToken();
-      const url = new URL(`${process.env.REACT_APP_API_BASE}/api/animal-type/offer`);
-      url.searchParams.append('availabilityId', availabilityId);
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
+      const CSRF_TOKEN = await fetchCsrfToken();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_BASE}/api/animal-type/offer`,
+        {
+          params: { availabilityId }, // équivalent de searchParams
+          withCredentials: true,      // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
 
-      const data = await response.json();
+      const data = response.data;
       setAnimalTypes(data);
 
       const initialSelected = {};
@@ -210,19 +204,19 @@ export function useAnimalTypes(availabilityId) {
     setIsLoading(true);
     setError(null);
     try {
-      const token = getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE}/api/animal-type/services/occurences`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_BASE}/api/animal-type/services/occurences`,
+        {
+          withCredentials: true, // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = response.data;
       setAllAnimalTypes(data);
     } catch (err) {
       console.error('Error fetching all animal types:', err);
@@ -235,26 +229,24 @@ export function useAnimalTypes(availabilityId) {
 
   const saveAllOffers = async (payload) => {
     try {
-      const token = getToken();
-      const response = await fetch(`${process.env.REACT_APP_API_BASE}/api/offer/bulk`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_BASE}/api/offer/bulk`,
+        payload, // axios stringify automatiquement l'objet JSON
+        {
+          withCredentials: true, // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
 
       console.log("All offers have been saved.");
-      return true;
     } catch (err) {
       console.error('Error saving offers:', err);
-      setError(err.message);
-      return false;
+      setError(getErrorMessage(err));
+      throw err;
     }
   };
 
@@ -495,15 +487,18 @@ export function useAvailabilityTypes() {
   const fetchTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const token = getToken();
-      const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-      if (!res.ok) throw new Error('Erreur lors du chargement des types');
-      const data = await res.json();
+      const CSRF_TOKEN = await fetchCsrfToken();
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_BASE}/api/availability-type/`,
+        {
+          withCredentials: true, // équivalent de credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+          }
+        }
+      );
+      const data = res.data;
       setTypes(data);
       await fetchAvailabilities();
     } catch (err) {
@@ -521,15 +516,18 @@ export function useAvailabilityTypes() {
     async ({ label, color }) => {
       try {
         const data = { label, color };
-        const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/new`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error('Erreur lors de la création');
+        const CSRF_TOKEN = await fetchCsrfToken();
+        const res = await axios.post(
+          `${process.env.REACT_APP_API_BASE}/api/availability-type/new`,
+          data, // Axios gère automatiquement JSON.stringify
+          {
+            withCredentials: true, // équivalent de credentials: 'include'
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': CSRF_TOKEN
+            }
+          }
+        );
         await fetchTypes(); // Rechargement local
       } catch (err) {
         console.error(err);
@@ -541,15 +539,18 @@ export function useAvailabilityTypes() {
   const updateType = useCallback(
     async (id, { label, color }) => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ label, color }),
-        });
-        if (!res.ok) throw new Error('Erreur lors de la mise à jour');
+        const CSRF_TOKEN = await fetchCsrfToken();
+        const res = await axios.put(
+          `${process.env.REACT_APP_API_BASE}/api/availability-type/${id}`,
+          { label, color }, // Axios gère automatiquement JSON.stringify
+          {
+            withCredentials: true, // équivalent de credentials: 'include'
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': CSRF_TOKEN
+            }
+          }
+        );
         await fetchTypes(); // Rechargement local
       } catch (err) {
         console.error(err);
@@ -561,14 +562,18 @@ export function useAvailabilityTypes() {
   const deleteType = useCallback(
     async (id) => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_BASE}/api/availability-type/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-        });
-        if (!res.ok) throw new Error('Erreur lors de la suppression');
+        const CSRF_TOKEN = await fetchCsrfToken();
+
+        const res = await axios.delete(
+          `${process.env.REACT_APP_API_BASE}/api/availability-type/${id}`,
+          {
+            withCredentials: true, // équivalent de credentials: 'include'
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': CSRF_TOKEN
+            }
+          }
+        );
         await fetchTypes(); // Rechargement local
       } catch (err) {
         console.error(err);

@@ -1,14 +1,29 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const securityRoutes = require('./routes/security.routes.js');
 const path = require('path');
 
 const app = express();
 
-app.use(cors());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+app.use(cookieParser());
+
+app.use(cors({
+  origin: "http://localhost:3001", // frontend
+  credentials: true               // autorise cookies cross-domain
+}));
 
 const port = 3000;
 
 app.use(express.json()); // Pour parser le JSON dans les requêtes
+
+app.use('/api', securityRoutes);
 
 const authRoutes = require('./routes/auth.routes');
 const animalRoutes = require('./routes/animal.routes');

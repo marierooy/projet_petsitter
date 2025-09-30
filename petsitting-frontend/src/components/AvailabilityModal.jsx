@@ -12,6 +12,8 @@ export function AvailabilityModal({
   const [formData, setFormData] = useState(createFormData());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -65,7 +67,7 @@ export function AvailabilityModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
+      className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
       onClick={handleClose}
     >
       <div
@@ -113,6 +115,7 @@ export function AvailabilityModal({
               value={formData.start_date}
               onChange={handleInputChange}
               required
+              min={today}
               className="inputForm"
             />
           </div>
@@ -129,6 +132,7 @@ export function AvailabilityModal({
               value={formData.end_date}
               onChange={handleInputChange}
               required
+              min={formData.start_date || today}
               className="inputForm"
             />
           </div>

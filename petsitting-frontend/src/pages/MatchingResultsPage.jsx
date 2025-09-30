@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { StarRating } from 'utils/helpers';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { fetchCsrfToken } from '../utils/csrf';
 
 // Composant filtre étoiles cliquables
 function StarFilter({ currentRating, onChange }) {
@@ -67,6 +68,22 @@ export default function MatchingResultsPage() {
   const [sortBy, setSortBy] = useState('price'); // 'price' | 'distance' | 'rating'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
 
+  const [csrfToken, setCsrfToken] = useState("");
+
+  // Charger le CSRF token dès le montage
+  useEffect(() => {
+    const fetchCsrf = async () => {
+      try {
+        const token = await fetchCsrfToken();
+        console.log(token);
+        setCsrfToken(token);
+      } catch (err) {
+        console.error("Impossible de récupérer le CSRF token :", err);
+      }
+    };
+    fetchCsrf();
+  }, []);
+
   useEffect(() => {
     if (!requestData || requestData.length === 0) return;
 
@@ -75,7 +92,13 @@ export default function MatchingResultsPage() {
         let commonPetsitters = [];
 
         if (!Array.isArray(requestData)) {
-          const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, requestData);
+          const token = await fetchCsrfToken();
+          const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`,  
+            requestData,
+            {
+              withCredentials: true,
+              headers: { "X-CSRF-Token": token }
+            });
           commonPetsitters = response.data.map(p => ({
             ...p,
             syntheticOffers: {
@@ -83,9 +106,15 @@ export default function MatchingResultsPage() {
             },
           }));
         } else {
+          const token = await fetchCsrfToken();
           const results = await Promise.all(
-            requestData.map((data) => axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`, data))
-          );
+            requestData.map((data) => axios.post(`${process.env.REACT_APP_API_BASE}/api/matching`,    
+              data,
+              {
+                withCredentials: true,
+                headers: { "X-CSRF-Token": token }
+              })
+          ))
 
           const listOfIdSets = results.map((res) =>
             new Set(res.data.map((p) => p.id))
@@ -140,12 +169,10 @@ export default function MatchingResultsPage() {
 
   const handleSelectPetsitter = async (petsitter) => {
     try {
-      const token = localStorage.getItem('token');
-
       const syntheticResponse = await axios.post(
         `${process.env.REACT_APP_API_BASE}/api/offer/synthetic/${petsitter.id}`,
         petsitter.syntheticOffers,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { withCredentials: true, headers: { "X-CSRF-Token": csrfToken } }
       );
 
       const createdOffers = syntheticResponse.data;
@@ -165,9 +192,7 @@ export default function MatchingResultsPage() {
       await axios.post(`${process.env.REACT_APP_API_BASE}/api/contract`, { 
         petsitter, 
         requestData
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      },  { withCredentials: true, headers: { "X-CSRF-Token": csrfToken } });
 
       navigate('/mes-contrats');
     } catch (error) {
@@ -308,7 +333,10 @@ export default function MatchingResultsPage() {
                   {petsitter.first_name} {petsitter.last_name}
                 </h2>
                 {petsitter.averageRating != null && (
-                  <StarRating rating={petsitter.averageRating} />
+                  <div className="flex items-end gap-1 text-gray-600">
+                    <StarRating rating={petsitter.averageRating} />
+                    <span className='text-sm'>({petsitter.numberRatings})</span>
+                  </div>
                 )}
               </div>
 

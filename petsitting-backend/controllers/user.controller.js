@@ -13,13 +13,19 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const { user, token } = await userService.login(email, password);
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      maxAge: 60 * 60 * 1000 // 1h
+    });
     res.json({ message: 'Connexion réussie', user, token });
   } catch (err) {
     res.status(401).json({ error: err.message });
   }
 };
 
-const getCurrentUser = async (req, res) => {
+const getCurrentUserById = async (req, res) => {
   try {
     const user = await userService.getById(req.user.id);
     res.json(user);
@@ -50,4 +56,17 @@ const getPetsitterProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getCurrentUser, updateCurrentUser, getPetsitterProfile };
+const getCurrentUser = (req, res) => {
+  res.json({ user: req.user });
+}
+
+const logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+  });
+  res.json({ message: "Déconnecté" });
+}
+
+module.exports = { register, login, logout, getCurrentUserById, updateCurrentUser, getPetsitterProfile, getCurrentUser };

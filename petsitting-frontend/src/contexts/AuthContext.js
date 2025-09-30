@@ -1,48 +1,91 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { fetchCsrfToken } from '../utils/csrf';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  // ⚡ Intercepteur global pour gérer la session expirée
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 401) {
+          if (error.config?.url.includes("/api/auth/me")) {
+            return Promise.reject(error);
+          }
+          setUser(null);       // réinitialise le contexte
+          navigate("/");       // redirection vers la page d'accueil
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [navigate]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    if (token) {
+    const checkAuth = async () => {
       try {
-        const decoded = jwtDecode(token);
-        const now = Date.now() / 1000; // en secondes
-
-        if (decoded.exp && decoded.exp > now) {
-          setUser({ token, ...decoded });
-        } else {
-          localStorage.removeItem('token');
-        }
-      } catch (err) {
-        console.error('Token invalide', err);
-        localStorage.removeItem('token');
+        const token = await fetchCsrfToken();
+        const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/auth/me`,
+        {
+          withCredentials: true,
+          headers: { "X-CSRF-Token": token },
+        });
+        setUser(res.data.user);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+    checkAuth();
   }, []);
 
-  const login = (token) => {
+  const login = async (credentials) => {
     try {
-      const decoded = jwtDecode(token);
-      localStorage.setItem('token', token);
-      setUser({ token, ...decoded });
+      const token = await fetchCsrfToken();
+      await axios.post(`${process.env.REACT_APP_API_BASE}/api/auth/login`, credentials,
+      {
+        withCredentials: true,
+        headers: { "X-CSRF-Token": token },
+      });
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/auth/me`,
+      {
+        withCredentials: true,
+        headers: { "X-CSRF-Token": token },
+      });
+      setUser(res.data.user);
+      navigate("/");
     } catch (err) {
-      console.error('Erreur lors du décodage du token', err);
+      console.error("Erreur login", err);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      const token = await fetchCsrfToken();
+      await axios.post(`${process.env.REACT_APP_API_BASE}/api/auth/logout`, {},
+      {
+        withCredentials: true,
+        headers: { "X-CSRF-Token": token },
+      });
+      setUser(null);
+      navigate("/");
+    } catch (err) {
+      console.error("Erreur logout", err);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

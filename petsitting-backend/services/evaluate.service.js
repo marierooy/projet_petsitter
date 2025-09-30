@@ -28,9 +28,6 @@ const createEvaluate = async (ownerId, contractId, comment, rate) => {
     throw new Error('ALREADY_EVALUATED');
   }
 
-  console.log(ownerId);
-  console.log(contract.AdvertOfferContracts[0].petsitter_id)
-
   return evaluateRepository.create({
     comment,
     rate,

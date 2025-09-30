@@ -21,18 +21,39 @@ module.exports = (sequelize) => {
     },
     description: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false, // obligatoire
+      references: {
+        model: 'Users', // table Users
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
+    },
+    animalTypeId: {
+      type: DataTypes.INTEGER,
+      allowNull: false, // obligatoire
+      references: {
+        model: 'AnimalTypes', // table AnimalTypes
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
     },
   });
 
   Animal.associate = (models) => {
-    Animal.belongsTo(models.AnimalType, {
-      foreignKey: 'animalTypeId',
-      as: 'animalType',
-    });
-
     Animal.belongsTo(models.User, {
       foreignKey: 'userId',
+      onDelete: 'CASCADE',
       as: 'owner',
+    });
+
+    Animal.belongsTo(models.AnimalType, {
+      foreignKey: 'animalTypeId',
+      onDelete: 'CASCADE',
+      as: 'animalType',
     });
   };
 

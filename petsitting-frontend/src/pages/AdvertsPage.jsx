@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { fetchCsrfToken } from '../utils/csrf';
 
 const groupAdvertsByDateRange = (adverts) => {
   const grouped = {};
@@ -29,11 +30,12 @@ const AdvertsPage = () => {
     const token = getToken();
     const fetchAdverts = async () => {
       try {
+        const token = await fetchCsrfToken();
         const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/advert/upcoming`, {
+        withCredentials: true,
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+          "X-CSRF-Token": token
+        }
       });
         const grouped = groupAdvertsByDateRange(res.data);
         setGroupedAdverts(grouped);

@@ -22,7 +22,7 @@ const createContract = async ({ petsitter, requestData, ownerId }) => {
     );
 
     if (!matchingRequest || !matchingRequest.advertId) {
-    throw new Error(`Impossible de trouver advertId pour l'animal ${animalId}`);
+      throw new Error(`Impossible de trouver advertId pour l'animal ${animalId}`);
     }
 
     await AdvertOfferContract.create({
@@ -34,17 +34,42 @@ const createContract = async ({ petsitter, requestData, ownerId }) => {
     });
   }
 
-  return contract;
+  const contractWithRelations = await Contract.findByPk(contract.id, {
+    include: [
+      {
+        model: AdvertOfferContract,
+        include: [
+          { model: Advert, as: "Advert" },
+          { model: Offer, as: "Offer" },
+          { model: User, as: "Petsitter" },
+          { model: User, as: "Owner" },
+        ]
+      }
+    ]
+  });
+
+  return contractWithRelations;
 };
 
 const getContractsForUser = async (userId) => {
     const contracts = await Contract.findAll({
-        // where: { [Op.or]: [{ petsitterId: userId }, { ownerId: userId }] },
         include: [{
             model: AdvertOfferContract,
+            where: { [Op.or]: [{ petsitter_id: userId }, { owner_id: userId }] },
             include: [
             {
+              model: User,
+              as: 'Owner',
+              attributes: ['id', 'first_name', 'last_name', 'email']
+            },
+            {
+              model: User,
+              as: 'Petsitter',
+              attributes: ['id', 'first_name', 'last_name', 'email']
+            },
+            {
                 model: Offer,
+                as: 'Offer',
                 include: [
                 {
                     model: OfferServiceOccurence,
@@ -55,6 +80,7 @@ const getContractsForUser = async (userId) => {
             },
             {
                 model: Advert,
+                as: 'Advert',
                 include: ['animal', 'careMode']
             }
             ],
@@ -81,6 +107,10 @@ const validateContract = async (contractId, userId) => {
     include: {
       model: AdvertOfferContract,
       required: true,
+      include: [
+        { model: User, as: 'Petsitter' }, // alias défini dans ta relation
+        { model: User, as: 'Owner' },     // alias défini dans ta relation
+      ],
     },
   });
 

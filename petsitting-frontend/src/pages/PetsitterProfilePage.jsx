@@ -1,29 +1,16 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import CalendarComponent from '../components/CalendarComponent';
 import OfferAccordion from '../components/OfferAccordion';
 import EvaluateForm from '../components/EvaluateForm';
 import { useAuth } from '../contexts/AuthContext';
 import { StarRating } from 'utils/helpers';
 import axios from 'axios';
-
-const displayFields = {
-  presentation: "Présentation",
-  habitation: "Type d’habitation",
-  habitation_size: "Surface habitation (m²)",
-  number_rooms: "Nombre de pièces",
-  garden: "Jardin",
-  garden_size: "Surface du jardin (m²)",
-  terrace: "Terrasse",
-  yard: "Cour",
-  balcony: "Balcon",
-  number_children: "Nombre d’enfants"
-};
+import { fetchCsrfToken } from '../utils/csrf';
 
 const PetsitterProfilePage = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const token = localStorage.getItem('token');
 
   const [profile, setProfile] = useState(null);
   const [selectedAvailability, setSelectedAvailability] = useState(null);
@@ -34,13 +21,75 @@ const PetsitterProfilePage = () => {
 
   const offerAccordionRef = useRef(null);
 
+  const location = useLocation();
+
+  const fetchEvaluations = async () => {
+    try {
+      const csrfToken = await fetchCsrfToken();
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/evaluate/${id}`, {
+        withCredentials: true,
+        headers: { "X-CSRF-Token": csrfToken },
+      });
+      setEvaluations(res.data.evaluations);
+      setAverageRate(res.data.averageRate);
+    } catch (err) {
+      console.error("Erreur chargement évaluations", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchContracts = async () => {
+    try {
+      const csrfToken = await fetchCsrfToken();
+      const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/contract/petsitter/owner/${id}`, {
+        withCredentials: true,
+        headers: { "X-CSRF-Token": csrfToken },
+      });
+      const filtered = res.data.filter(c => c.owner_validation && c.petsitter_validation && !c.evaluated);
+      setContracts(filtered);
+    } catch (err) {
+      console.error("Erreur chargement contrats", err);
+    }
+  };
+
+  useEffect(() => {
+    if (location.hash && profile) {
+      const idHash = location.hash.replace('#', '');
+      const element = document.getElementById(idHash);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [location, profile]);
+
+  // 🔑 Récupération CSRF token au montage
+  // useEffect(() => {
+  //   const fetchCsrf = async () => {
+  //     try {
+  //       const token = await fetchCsrfToken();
+  //       setCsrfToken(token);
+  //     } catch (err) {
+  //       console.error("Erreur récupération CSRF token", err);
+  //     }
+  //   };
+  //   fetchCsrf();
+  // }, []);
+
   const handleDeleteEvaluation = async (evalId) => {
     if (!window.confirm("Supprimer cette évaluation ?")) return;
     try {
-      await axios.delete(`${process.env.REACT_APP_API_BASE}/api/evaluate/${evalId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const csrfToken = await fetchCsrfToken();
+      await axios.delete(`${process.env.REACT_APP_API_BASE}/api/evaluate/${evalId}`,
+        {
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken },
+        }
+      );
       setEvaluations(prev => prev.filter(e => e.id !== evalId));
+
+      await fetchEvaluations();
+      await fetchContracts();
     } catch (err) {
       console.error("Erreur suppression évaluation", err);
     }
@@ -56,7 +105,12 @@ const PetsitterProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/user/petsitter/${id}`);
+        const csrfToken = await fetchCsrfToken();
+        const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/user/petsitter/${id}`,
+        {
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken },
+        });
         setProfile(res.data);
       } catch (err) {
         console.error("Erreur chargement profil", err);
@@ -66,44 +120,22 @@ const PetsitterProfilePage = () => {
   }, [id]);
 
   useEffect(() => {
-    const fetchEvaluations = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/evaluate/${id}`);
-        setEvaluations(res.data.evaluations);
-        setAverageRate(res.data.averageRate);
-      } catch (err) {
-        console.error("Erreur chargement évaluations", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEvaluations();
-  }, [id, evaluations]);
+  }, [id]);
 
   useEffect(() => {
-    const fetchContracts = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/contract/petsitter/owner/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const filtered = res.data.filter(c => c.owner_validation && c.petsitter_validation && !c.evaluated);
-        setContracts(filtered);
-      } catch (err) {
-        console.error("Erreur chargement contrats", err);
-      }
-    };
     fetchContracts();
-  }, [id, token, evaluations]);
+  }, [id]);
 
   if (loading || !profile) return <div>Chargement...</div>;
 
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* Photo + Nom/Note et Présentation */}
-      <div className="flex flex-col md:flex-row items-start gap-12 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 mb-6">
         
         {/* Photo + Nom + Note */}
-        <div className="flex flex-row items-center md:items-center gap-4">
+        <div className="flex flex-col mb-3 sm:mb-0 sm:flex-row items-center md:items-center gap-4">
           {profile.photo && (
             <img
               src={`${process.env.REACT_APP_API_BASE}${profile.photo}`}
@@ -115,13 +147,18 @@ const PetsitterProfilePage = () => {
             <h1 className="text-2xl font-bold text-var(--color-text)">
               {profile.first_name} {profile.last_name}
             </h1>
-            {averageRate ? (<StarRating rating={averageRate} />) : null}
+            {averageRate && (
+              <div className="flex items-center gap-2">
+                <StarRating rating={averageRate} />
+                <span>({evaluations.length})</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Présentation */}
         {profile.presentation && (
-          <div className="flex-1 ml-12 md:ml-12">
+          <div className="">
             <h3 className="text-lg font-semibold text-var(--color-text) mb-2">Présentation</h3>
             <div className="bg-white rounded-lg shadow-md p-5">
               <p>{profile.presentation}</p>
@@ -188,7 +225,7 @@ const PetsitterProfilePage = () => {
         {selectedAvailability && <OfferAccordion selectedAvailability={selectedAvailability} />}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6" id="avis">
         <h2 className="text-xl font-semibold mb-2 text-var(--color-text)">Commentaires et notes</h2>
         {evaluations.length === 0 ? (
           <p>Aucun commentaire pour le moment.</p>
@@ -205,7 +242,7 @@ const PetsitterProfilePage = () => {
                 <StarRating rating={evalItem.rate} />
                 {user?.roles?.includes('admin') && (
                   <button
-                    onClick={() => handleDeleteEvaluation(evalItem.id)}
+                    onClick={async() => {handleDeleteEvaluation(evalItem.id)}}
                     className="text-var(--color-red) bg-transparent hover:bg-transparent ml-2"
                     title="Supprimer l'évaluation"
                   >
@@ -225,7 +262,11 @@ const PetsitterProfilePage = () => {
             <EvaluateForm
               key={c.id}
               contractId={c.id}
-              onSuccess={() => setContracts(prev => prev.filter(pc => pc.id !== c.id))}
+              onSuccess={async () => {
+                setContracts(prev => prev.filter(pc => pc.id !== c.id));
+                await fetchEvaluations();
+                await fetchContracts();
+              }}
             />
           ))}
         </div>

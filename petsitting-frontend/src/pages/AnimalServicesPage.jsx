@@ -1,21 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { fetchCsrfToken } from '../utils/csrf';
 
 function AnimalServicesPage() {
   const [animalTypes, setAnimalTypes] = useState([]);
   const [services, setServices] = useState([]);
   const [expandedAnimalId, setExpandedAnimalId] = useState(null);
   const [selectedServices, setSelectedServices] = useState({});
-  const token = localStorage.getItem('token');
+  const [csrfToken, setCsrfToken] = useState(null);
 
   useEffect(() => {
-    fetchAnimals();
-    fetchServices();
+    const init = async () => {
+      const token = await fetchCsrfToken();
+      setCsrfToken(token);
+      fetchAnimals(token);
+      fetchServices(token);
+    };
+    init();
   }, []);
 
-  const fetchAnimals = async () => {
+  const fetchAnimals = async (token) => {
     const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/animal-type`, {
-      headers: { Authorization: `Bearer ${token}` }
+      withCredentials: true,
+      headers: { "X-CSRF-Token": token }
     });
 
     const types = res.data;
@@ -23,8 +30,10 @@ function AnimalServicesPage() {
 
     for (const type of types) {
       const resServices = await axios.get(`${process.env.REACT_APP_API_BASE}/api/animal-type/${type.id}/services`, {
-        headers: { Authorization: `Bearer ${token}` }
+        withCredentials: true,
+        headers: { "X-CSRF-Token": token }
       });
+
       selected[type.id] = {};
       resServices.data.forEach(service => {
         selected[type.id][service.id] = true;
@@ -35,9 +44,10 @@ function AnimalServicesPage() {
     setSelectedServices(selected);
   };
 
-  const fetchServices = async () => {
+  const fetchServices = async (token) => {
     const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/service`, {
-      headers: { Authorization: `Bearer ${token}` }
+      withCredentials: true,
+      headers: { "X-CSRF-Token": token }
     });
     setServices(res.data);
   };
@@ -57,6 +67,8 @@ function AnimalServicesPage() {
   };
 
   const handleSaveServices = async (animalTypeId) => {
+    if (!csrfToken) return;
+
     const selected = selectedServices[animalTypeId];
     const serviceIds = Object.keys(selected).filter(id => selected[id]);
 
@@ -64,12 +76,15 @@ function AnimalServicesPage() {
       await axios.put(
         `${process.env.REACT_APP_API_BASE}/api/animal-type/${animalTypeId}/services`,
         { serviceIds },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken }
+        }
       );
-      alert('Services enregistrés.');
+      alert("Services enregistrés.");
     } catch (err) {
       console.error(err);
-      alert('Erreur lors de l\'enregistrement');
+      alert("Erreur lors de l'enregistrement");
     }
   };
 

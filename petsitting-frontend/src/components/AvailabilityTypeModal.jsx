@@ -44,7 +44,7 @@ export function AvailabilityTypeModal({ isOpen, onClose, onSubmit, initialData }
       onRequestClose={onClose}
       contentLabel="Type de disponibilité"
       ariaHideApp={false}
-      className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-auto mt-20 outline-none"
+      className="modal bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-auto mt-20 outline-none"
       overlayClassName="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-start z-50"
     >
       <header>

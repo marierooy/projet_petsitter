@@ -1,6 +1,3 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/ui/dialog';
-import { Button } from 'components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -19,7 +16,7 @@ export function ManagementModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
+      className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
       onClick={onClose}
     >
       <div

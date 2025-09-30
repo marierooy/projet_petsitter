@@ -1,9 +1,16 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const PrivateRoute = ({ children }) => {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
-};
+export default function PrivateRoute({ children }) {
+  const { user, loading } = useAuth();
 
-export default PrivateRoute;
+  if (loading) {
+    return <div>Chargement...</div>; // ⏳ évite la redirection prématurée
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}

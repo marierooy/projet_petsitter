@@ -1,21 +1,30 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import AddEditAnimalForm from '../components/AddEditAnimalForm';
+import { fetchCsrfToken } from '../utils/csrf';
 
 function AnimalList() {
   const [animals, setAnimals] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingAnimal, setEditingAnimal] = useState(null);
-  const token = localStorage.getItem('token');
+  const [csrfToken, setCsrfToken] = useState(null);
 
   useEffect(() => {
-    fetchAnimals();
+    const init = async () => {
+      const token = await fetchCsrfToken();
+      setCsrfToken(token);
+      fetchAnimals(token);
+    };
+    init();
   }, []);
 
-  const fetchAnimals = async () => {
+  const fetchAnimals = async (token) => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_BASE}/api/animal`, {
-        headers: { Authorization: `Bearer ${token}` }
+        withCredentials: true,
+        headers: {
+          "X-CSRF-Token": token
+        }
       });
       setAnimals(res.data);
     } catch (err) {
@@ -25,14 +34,18 @@ function AnimalList() {
   };
 
   const handleDelete = async (id) => {
+    if (!csrfToken) return;
     const confirmDelete = window.confirm("Confirmer la suppression de cet animal ?");
     if (!confirmDelete) return;
 
     try {
       await axios.delete(`${process.env.REACT_APP_API_BASE}/api/animal/${id}/delete`, {
-        headers: { Authorization: `Bearer ${token}` }
+        withCredentials: true,
+        headers: {
+          "X-CSRF-Token": csrfToken
+        }
       });
-      fetchAnimals();
+      fetchAnimals(csrfToken);
     } catch (err) {
       console.error('Erreur suppression :', err);
       alert("Une erreur est survenue lors de la suppression.");
@@ -102,7 +115,6 @@ function AnimalList() {
             setEditingAnimal(null);
             setShowModal(true);
           }}
-          style={{ fontWeight: '700', padding: '0.75rem 1.5rem' }}
         >
           Ajouter un animal
         </button>
@@ -113,7 +125,6 @@ function AnimalList() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
             <AddEditAnimalForm
-              token={token}
               initialData={editingAnimal}
               onSuccess={() => {
                 setShowModal(false);

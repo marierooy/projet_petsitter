@@ -165,19 +165,29 @@ const groupContinuousAvailabilities = (availabilities) => {
   return groups;
 };
 
-const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate, services, userId, numberAnimalsPerType }) => {
-  const animal = await Animal.findByPk(animalId, {
-    include: [{ model: AnimalType, as: 'animalType' }]
-  });
-  if (!animal) throw new Error('Animal non trouvé');
+const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate, services, userId, numberAnimalsPerType, ownerAddressInput = null }) => {
+  let ownerAddress = null;
+  let animal = null;
+  if (ownerAddressInput === null) {
+    animal = await Animal.findByPk(animalId, {
+      include: [{ model: AnimalType, as: 'animalType' }]
+    });
+    if (!animal) throw new Error('Animal non trouvé');
 
-  const owner = await User.findByPk(userId);
-  if (!owner) throw new Error('Utilisateur non trouvé');
+    const owner = await User.findByPk(userId);
+    if (!owner) throw new Error('Utilisateur non trouvé');
 
-  const ownerAddress = formatAddress(owner);
+    ownerAddress = formatAddress(owner);
+  } else {
+    ownerAddress = formatAddress(ownerAddressInput);
+  }
+
+  const whereCondition = userId
+  ? { id: { [Op.not]: userId } }
+  : {};
 
   const users = await User.findAll({
-    where: { id: { [Op.not]: userId } },
+    where: whereCondition,
     include: [
       {
         model: Role,
@@ -353,19 +363,21 @@ const findMatchingPetsitters = async ({ animalId, careModeId, startDate, endDate
         return servicesOk && careModeOk && animalCountOk;
       })).filter(Boolean);
 
-      const syntheticOffer = await rebuildSyntheticOffer(usedOffers, startDate, endDate, animal.animalTypeId, totalOfferPrice, totalTravelPrice, servicesWithTotalPrice, [careModeId]);
-      
+      let syntheticOffer = null;
+      if (ownerAddressInput === null) {
+        syntheticOffer = await rebuildSyntheticOffer(usedOffers, startDate, endDate, animal.animalTypeId, totalOfferPrice, totalTravelPrice, servicesWithTotalPrice, [careModeId]);
+      }
       const distanceInfo = await getBirdDistance(ownerAddress, formatAddress(user));
-
-      console.log(user);
 
       const rates = user.evaluations?.map(e => e.rate) || [];
       const averageRating = rates.length
         ? rates.reduce((sum, r) => sum + r, 0) / rates.length
         : null;
+      const numberRatings = rates.length;
 
       results.push({
         ...user.toJSON(),
+        numberRatings,
         averageRating,
         totalPrice: Math.round(totalPrice * 100) / 100,
         distanceInKm: Math.round(distanceInfo.distanceInKm * 10) / 10,

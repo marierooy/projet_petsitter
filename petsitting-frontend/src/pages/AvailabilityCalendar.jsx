@@ -357,7 +357,7 @@ export default function AvailabilityCalendar() {
     <style jsx>{`
       /* Styles généraux pour tous les boutons (calendrier et autres) */
       button {
-        background-color: #2563eb; /* bleu primaire */
+        background-color: var(--color-pink);
         color: white;
         border: none;
         border-radius: 8px;
@@ -368,11 +368,11 @@ export default function AvailabilityCalendar() {
         transition: background-color 0.3s ease;
       }
       button:hover, button:focus {
-        background-color: #1d4ed8; /* bleu plus foncé */
+        background-color: var(--color-pink-dark); /* bleu plus foncé */
         outline: none;
       }
       button:disabled {
-        background-color: #a5b4fc;
+        background-color: var(--color-pink-dark);
         cursor: not-allowed;
         color: #e0e7ff;
       }
@@ -397,28 +397,28 @@ export default function AvailabilityCalendar() {
         padding: 8px 14px;
         font-weight: 600;
         font-family: inherit;
-        color: #2563eb;
+        color: var(--color-pink);
         background-color: transparent;
-        border: 2px solid #2563eb;
+        border: 2px solid var(--color-pink);
         transition: background-color 0.3s ease, color 0.3s ease;
       }
 
       .rbc-calendar-custom .rbc-toolbar button:hover {
-        background-color: #2563eb;
+        background-color: var(--color-pink);
         color: white;
       }
 
       .rbc-calendar-custom .rbc-toolbar button.rbc-active {
-        background-color: #2563eb;
+        background-color: var(--color-pink);
         color: white;
-        border-color: #2563eb;
+        border-color: var(--color-pink);
       }
 
       /* Titre du mois dans la toolbar (ex: "Août 2025") */
       .rbc-calendar-custom .rbc-toolbar-label {
         font-weight: 700;
         font-size: 1.25rem;
-        color: #1e40af; /* bleu foncé */
+        color: var(--color-pink-dark);; /* bleu foncé */
         text-transform: capitalize; /* première lettre majuscule */
         user-select: none;
       }
@@ -446,13 +446,22 @@ export default function AvailabilityCalendar() {
         color: #374151;
         font-weight: 700;
         font-size: 0.9rem;
-        border-bottom: 2px solid #2563eb;
+        border-bottom: 2px solid var(--color-pink);
         text-transform: capitalize;
       }
 
       /* Désactiver la time gutter (pas d’heure) */
       .rbc-calendar-custom .rbc-time-gutter {
         display: none;
+      }
+      @media (max-width: 768px) {
+        .rbc-calendar-custom .rbc-btn-group {
+          display: flex;
+          flex-wrap: wrap;
+        }
+        .rbc-calendar-custom {
+          height: 620px !important;
+        }
       }
     `}</style>
     </div>

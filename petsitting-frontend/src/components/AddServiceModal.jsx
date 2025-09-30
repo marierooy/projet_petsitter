@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { isOccurenceAFrequence } from 'utils/helpers';
+import { fetchCsrfToken } from '../utils/csrf';
 
 const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
   const [services, setServices] = useState([]);
@@ -12,11 +13,12 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const csrfToken = await fetchCsrfToken();
         const res = await axios.get(
-          `${process.env.REACT_APP_API_BASE}/api/animal-type/${animalTypeId}/services`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+          `${process.env.REACT_APP_API_BASE}/api/animal-type/${animalTypeId}/services`, {
+          withCredentials: true,
+          headers: { "X-CSRF-Token": csrfToken }
+        });
         setServices(res.data);
       } catch (err) {
         console.error('Erreur lors du chargement des services', err);
@@ -37,11 +39,12 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
         setPrice(osoToEdit.price);
 
         try {
-          const token = localStorage.getItem('token');
+          const csrfToken = await fetchCsrfToken();
           const res = await axios.get(
-            `${process.env.REACT_APP_API_BASE}/api/service/${serviceId}/occurences`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+            `${process.env.REACT_APP_API_BASE}/api/service/${serviceId}/occurences`, {
+              withCredentials: true,
+              headers: { "X-CSRF-Token": csrfToken }
+            });
           setOccurrences(res.data);
         } catch (err) {
           console.error('Erreur lors du chargement des occurrences pour édition', err);
@@ -60,15 +63,37 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
     if (!serviceId) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const csrfToken = await fetchCsrfToken();
       const res = await axios.get(
-        `${process.env.REACT_APP_API_BASE}/api/service/${serviceId}/occurences`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+        `${process.env.REACT_APP_API_BASE}/api/service/${serviceId}/occurences`, {
+              withCredentials: true,
+              headers: { "X-CSRF-Token": csrfToken }
+          });
       setOccurrences(res.data);
     } catch (err) {
       console.error('Erreur lors du chargement des occurrences', err);
     }
+  };
+
+    const handleChangePrice = (e) => {
+    let original = e.target.value;        // la valeur telle qu'elle a été saisie
+
+    // Remplace la virgule par un point pour parseFloat
+    let val = original.replace(',', '.');
+    let num = parseFloat(val);
+
+    if (isNaN(num) || num < 0) {
+      setPrice('');
+      return;
+    }
+
+    // Arrondi à 2 décimales
+    num = Math.round(num * 100) / 100;
+
+    // Convertit en string avec 2 décimales et remet le séparateur original
+    const formatted = num.toString();
+
+    setPrice(formatted);
   };
 
   const handleSubmit = async (e) => {
@@ -110,17 +135,17 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
-        <h2 className="text-xl font-bold mb-4">
+        <h2 className="text-xl font-bold text-[var(--color-text)] mb-6 border-b-4 border-green-500 pb-2 inline-block">
           {osoToEdit ? 'Modifier le service' : 'Ajouter un service'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Service</label>
+            <label className="labelForm">Service</label>
             <select
               value={selectedServiceId}
               onChange={handleServiceChange}
-              className="w-full border rounded px-3 py-2"
+              className="inputForm"
             >
               <option value="">-- Sélectionnez un service --</option>
               {services.map((s) => (
@@ -133,11 +158,11 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
 
           {(occurrences.length > 0 || osoToEdit) && (
             <div>
-              <label className="block text-sm font-medium mb-1">Fréquence</label>
+              <label className="labelForm">Fréquence</label>
               <select
                 value={selectedOccurrenceId}
                 onChange={(e) => setSelectedOccurrenceId(e.target.value)}
-                className="w-full border rounded px-3 py-2"
+                className="inputForm"
               >
                 <option value="">-- Sélectionnez une fréquence --</option>
                 {occurrences.map((o) => (
@@ -150,14 +175,14 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1">Prix (€ {(isOccurenceAFrequence(occurrences.find((o) => o.id === parseInt(selectedOccurrenceId))?.label) && selectedOccurrenceId !== '') ? 'par jour': ''})</label>
+            <label className="labelForm">Prix (€ {(isOccurenceAFrequence(occurrences.find((o) => o.id === parseInt(selectedOccurrenceId))?.label) && selectedOccurrenceId !== '') ? 'par jour': ''})</label>
             <input
               type="number"
               min="0"
               step="0.01"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              onChange={handleChangePrice}
+              className="inputForm"
               placeholder="0.00"
             />
           </div>
@@ -165,14 +190,14 @@ const AddServiceModal = ({ offerId, animalTypeId, osoToEdit, onClose }) => {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              className="btn-gray"
               onClick={onClose}
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="btn-blue"
             >
               {osoToEdit ? 'Modifier' : 'Ajouter'}
             </button>

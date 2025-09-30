@@ -15,6 +15,7 @@ const createAnimal = async (req, res) => {
     });
     res.status(201).json(animal);
   } catch (error) {
+    console.log('Erreur createAnimal:', err);
     res.status(400).json({ error: error.message });
   }
 };

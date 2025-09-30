@@ -1,20 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import {
-  Select, SelectTrigger, SelectContent, SelectItem
-} from 'components/ui/select';
-import { Input } from 'components/ui/input';
-import { Button } from 'components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
 import { AnimalAccordion } from 'components/AnimalAccordion';
-import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { fetchCsrfToken } from '../utils/csrf';
 
 export default function BookingRequestPage() {
   const { user } = useAuth();
   const isAuthenticated = !!user;
   const userId = user?.id;
-  const token = user?.token;
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -33,26 +27,43 @@ export default function BookingRequestPage() {
   // Pour gérer les animaux ouverts (accordéon)
   const [expandedAnimals, setExpandedAnimals] = useState({});
 
+  const [address, setAddress] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+
+  const [errors, setErrors] = useState([]);
+
   const navigate = useNavigate();
 
-  const careModeOptions = careModes.map(careMode => ({
-    value: careMode.id.toString(),
-    label: careMode.label,
-  }));
+  const [csrfToken, setCsrfToken] = useState("");
 
-  const animalOptions = animals.filter(animal => !(animal.id in selectedServices)).map(animal => ({
-    value: animal.id.toString(),
-    label: animal.name,
-  }));
+  const today = new Date().toISOString().split("T")[0];
 
-  const animalTypeOptions = animalTypes.map(animalType => ({
-    value: animalType.name,
-    label: animalType.name,
-  }));
+  const errorRef = useRef(null);
+
+  useEffect(() => {
+    // 🔹 Charger le CSRF token au montage
+    const fetchCsrf = async () => {
+      const token = await fetchCsrfToken();
+      setCsrfToken(token);
+    };
+    fetchCsrf();
+  }, []);
+
+  // ✅ scroll automatique quand des erreurs apparaissent
+  useEffect(() => {
+    if (errors.length > 0 && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [errors]);
 
   // Chargement initial
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API_BASE}/api/care-mode`).then(res => {
+    axios.get(`${process.env.REACT_APP_API_BASE}/api/care-mode`, {
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrfToken },
+    }).then(res => {
       const mappedCareModes = res.data.map(careMode => {
         let label = '';
         if (careMode.label === 'home') label = 'Garde à domicile';
@@ -63,22 +74,22 @@ export default function BookingRequestPage() {
       setCareModes(mappedCareModes);
     });
 
-    axios.get(`${process.env.REACT_APP_API_BASE}/api/animal-type`).then(res => setAnimalTypes(res.data));
+    axios.get(`${process.env.REACT_APP_API_BASE}/api/animal-type`, {
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrfToken },
+    }).then(res => setAnimalTypes(res.data));
 
     if (isAuthenticated && userId) {
       axios.get(`${process.env.REACT_APP_API_BASE}/api/animal/services/occurences`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      }).then(res => setAnimals(res.data));
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrfToken },
+    }).then(res => setAnimals(res.data));
       axios.get(`${process.env.REACT_APP_API_BASE}/api/advert/recent`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }).then(res => setRecentAdverts(res.data));
+      withCredentials: true,
+      headers: { "X-CSRF-Token": csrfToken },
+    }).then(res => setRecentAdverts(res.data));
     }
-  }, [isAuthenticated, userId, token]);
+  }, [isAuthenticated, userId, csrfToken]);
 
   // Fonctions pour gérer l'état sélectionné
   const handleToggle = (animalId) => {
@@ -136,17 +147,41 @@ export default function BookingRequestPage() {
 
   // Soumission du formulaire
   const handleSubmit = async () => {
+    const validationErrors = [];
+
     if (!startDate || !endDate || !selectedCareMode) {
-      alert('Veuillez remplir toutes les dates et sélectionner un mode de garde.');
-      return;
+      validationErrors.push('Veuillez remplir toutes les dates et sélectionner un mode de garde.');
+    }
+
+    if (!isAuthenticated) {
+      if (!address || !postalCode || !city || !country) {
+        validationErrors.push('Veuillez renseigner votre adresse complète.');
+      }
     }
 
     if (!Object.keys(selectedServices).length) {
-      alert("Veuillez ajouter au moins un animal à la demande.");
+      validationErrors.push("Veuillez ajouter au moins un animal à la demande.");
+    }
+
+    for (const [animalId, serviceMap] of Object.entries(selectedServices)) {
+      for (const [serviceId, occurrenceId] of Object.entries(serviceMap)) {
+        if (!occurrenceId) {
+          const animal = animals.find(a => a.id.toString() === animalId);
+          const service = animal?.services?.find(s => s.id.toString() === serviceId);
+          validationErrors.push(
+            `Veuillez sélectionner une occurrence pour le service "${service?.label || serviceId}" de l’animal ${animal?.name || ''}`
+          );
+        }
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
     try {
+      setErrors([]);
       const selectedAnimals = animals.filter(animal => expandedAnimals[animal.id]);
       const countsByType = {};
       selectedAnimals.forEach(({ animalTypeId }) => {
@@ -169,29 +204,37 @@ export default function BookingRequestPage() {
           careModeId: selectedCareMode,
           animalId: animal.id,
           numberAnimalsPerType: countsByType[animal.animalTypeId],
-          userId, // ou propriétaire = user.id
+          userId,
           services,
+          ...(isAuthenticated ? {} : {
+          ownerAddressInput: {
+            address,
+            postalCode,
+            city,
+            country
+          }
+        })
         };
-      }).filter(Boolean); // Supprimer les null si animal non trouvé
+      }).filter(Boolean);
 
-      for (let i = 0; i < advertsPayload.length; i++) {
-        const advert = advertsPayload[i];
-        const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/advert`, advert, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-        });
+      if (isAuthenticated) {
+        for (let i = 0; i < advertsPayload.length; i++) {
+          const advert = advertsPayload[i];
+          const response = await axios.post(`${process.env.REACT_APP_API_BASE}/api/advert`, advert, {
+            withCredentials: true,
+            headers: { "X-CSRF-Token": csrfToken },
+          });
 
-        const createdAdvert = response.data; // on suppose que l'API renvoie l'objet advert avec son id
-        // Ajoute l'id dans l'objet original pour pouvoir l'utiliser ensuite
-        advertsPayload[i].advertId = createdAdvert.id;
+          const createdAdvert = response.data;
+          advertsPayload[i].advertId = createdAdvert.id;
+        }       
       }
+
       navigate('/matching-results', { state: advertsPayload });
       // reset si souhaité
     } catch (error) {
       console.error(error);
-      alert('Erreur lors de l’envoi des demandes.');
+      setErrors(["Erreur lors de l’envoi des demandes."]);
     }
   };
 
@@ -199,7 +242,16 @@ export default function BookingRequestPage() {
   return (
     <div className="min-h-screen container flex justify-center items-start p-6">
         <div className="w-[650px] max-w-4xl bg-white shadow-lg rounded-2xl p-8 space-y-8">
-        <h1 className="text-2xl font-bold mb-6 inline-block w-auto border-b-4 border-green-500" style={{ color: 'var(--color-green-dark)' }}>Demande de garde</h1>
+        <h1 className="text-2xl font-bold inline-block w-auto border-b-4 border-green-500" style={{ color: 'var(--color-green-dark)' }}>Demande de garde</h1>
+
+        {/* ✅ Affichage des erreurs */}
+        {errors.length > 0 && (
+          <div ref={errorRef} className="bg-red-100 text-red-700 p-3 rounded-lg space-y-1">
+            {errors.map((err, idx) => (
+              <p key={idx}>⚠️ {err}</p>
+            ))}
+          </div>
+        )}
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
@@ -210,6 +262,7 @@ export default function BookingRequestPage() {
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
               className="inputForm"
+              min={today}
             />
           </div>
           <div>
@@ -219,6 +272,7 @@ export default function BookingRequestPage() {
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
               className="inputForm"
+              min={startDate || today}
             />
           </div>
         </div>
@@ -240,15 +294,57 @@ export default function BookingRequestPage() {
           </select>
         </div>
 
+        {/* Adresse si pas authentifié */}
+        {!isAuthenticated && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="labelForm">Adresse</label>
+              <input
+                type="text"
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                className="inputForm"
+              />
+            </div>
+            <div>
+              <label className="labelForm">Code postal</label>
+              <input
+                type="text"
+                value={postalCode}
+                onChange={e => setPostalCode(e.target.value)}
+                className="inputForm"
+              />
+            </div>
+            <div>
+              <label className="labelForm">Ville</label>
+              <input
+                type="text"
+                value={city}
+                onChange={e => setCity(e.target.value)}
+                className="inputForm"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="labelForm">Pays</label>
+              <input
+                type="text"
+                value={country}
+                onChange={e => setCountry(e.target.value)}
+                className="inputForm"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Animal */}
         <div>
-          <label className="labelForm">Animal</label>
+          <label className="labelForm">Animaux</label>
           {isAuthenticated ? (
-            <div className="flex space-x-2 items-center">
+            <div className="flex flex-wrap space-x-2 items-center">
               <select
                 value={pendingAnimalId}
                 onChange={e => setPendingAnimalId(e.target.value)}
-                className="inputForm flex-[7]"
+                className="select-animal inputForm sm:flex-[7]"
               >
                 <option value="">Sélectionner un animal</option>
                 {animals
@@ -262,7 +358,7 @@ export default function BookingRequestPage() {
               <button
                 type="button"
                 disabled={!pendingAnimalId}
-                className={`px-4 py-2 flex-[3] rounded text-white ${
+                className={`px-4 py-2 sm:flex-[3] rounded text-white ${
                   pendingAnimalId ? 'btn-blue' : 'btn-gray !bg-gray-300 cursor-not-allowed'
                 }`}
                 onClick={() => {
@@ -324,7 +420,9 @@ export default function BookingRequestPage() {
               </select>
               <button
                 type="button"
-                className="btn-primary"
+                className={`px-4 py-2 rounded text-white ${
+                    newAnimal.name && newAnimal.type ? 'btn-blue' : 'btn-gray !bg-gray-300 cursor-not-allowed'
+                }`}
                 onClick={async () => {
                   if (!newAnimal.name || !newAnimal.type) {
                     alert('Veuillez renseigner un nom et un type d’animal.');
